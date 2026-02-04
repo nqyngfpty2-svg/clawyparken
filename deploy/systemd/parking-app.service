@@ -1,0 +1,14 @@
+[Unit]
+Description=clawyparken (uvicorn)
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/clawyparken
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/opt/clawyparken/.venv/bin/uvicorn parking_app.app.main:app --host 127.0.0.1 --port 18880
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

@@ -13,15 +13,15 @@ Kleine Webapp zum Teilen/Buchen von Firmenparkplätzen.
 ## Lokaler Start (dev)
 
 ```bash
-python3 -m venv .venv
+make venv
 . .venv/bin/activate
-pip install -r requirements.txt
-uvicorn parking_app.app.main:app --host 127.0.0.1 --port 18880
+make install
+make dev
 ```
 
-## Deployment (Beispiel)
-- uvicorn via systemd (127.0.0.1:18880)
-- nginx reverse proxy auf 443 (TLS: für IP self-signed, für Domain Let’s Encrypt)
+## Deployment
+
+Siehe: [DEPLOYMENT.md](./DEPLOYMENT.md)
 
 ## Wichtige Dateien
 - App: `parking_app/app/main.py`
