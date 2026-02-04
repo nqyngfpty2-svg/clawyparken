@@ -416,6 +416,39 @@ def owner_withdraw_series(
     return RedirectResponse(url="/owner", status_code=303)
 
 
+@app.post("/owner/withdraw_all")
+def owner_withdraw_all(code: str = Form(...), reason: str = Form("")):
+    """Withdraw all future offers for this owner spot and cancel active bookings.
+
+    Anonym mode: no notifications.
+    """
+    code = code.strip().upper()
+    today = date.today().strftime("%Y-%m-%d")
+    with connect() as con:
+        spot = con.execute("SELECT id, name FROM spots WHERE owner_code=?", (code,)).fetchone()
+        if not spot:
+            return PlainTextResponse("Code unbekannt", status_code=401)
+
+        # Cancel active future bookings first
+        con.execute(
+            """
+            UPDATE bookings
+            SET status='cancelled_by_owner', cancelled_at=?, cancel_reason=?
+            WHERE spot_id=? AND day>? AND status='active'
+            """,
+            (now_iso(), (reason.strip() or "Owner hat alle Freigaben zurückgezogen")[:200], spot["id"], today),
+        )
+
+        # Delete future offers
+        con.execute(
+            "DELETE FROM offers WHERE spot_id=? AND day>?",
+            (spot["id"], today),
+        )
+        con.commit()
+
+    return RedirectResponse(url="/owner", status_code=303)
+
+
 @app.post("/owner/withdraw")
 def owner_withdraw(request: Request, code: str = Form(...), day: str = Form(...), reason: str = Form("")):
     code = code.strip().upper()

@@ -3,7 +3,9 @@
 <h2 class="h5">Owner: <span class="mono">{{ spot }}</span></h2>
 
 <div class="alert alert-info">
-  Tipp: „Anbieten“ für Homeoffice-Tage. Wenn schon gebucht: Rückzug storniert die Buchung und verschickt eine E-Mail.
+  Tipp: „Anbieten“ für Homeoffice-Tage.
+  <br/>
+  Hinweis: Anonym-Modus (keine E-Mails). Rückzug storniert ggf. bestehende Buchungen.
 </div>
 
 <div class="card mb-3">
@@ -37,7 +39,14 @@
 
     <hr class="my-3" />
 
-    <h3 class="h6">Zeitraum zurücknehmen (Serie)</h3>
+    <div class="d-flex justify-content-between align-items-center">
+      <h3 class="h6 mb-0">Zeitraum zurücknehmen (Serie)</h3>
+      <form method="post" action="/owner/withdraw_all" class="m-0">
+        <input type="hidden" name="code" value="{{ code }}" />
+        <input type="hidden" name="reason" value="Owner hat alle Freigaben zurückgezogen" />
+        <button class="btn btn-sm btn-danger" type="submit" onclick="return confirm('Wirklich ALLE zukünftigen Freigaben zurückziehen?\n\nDas storniert ggf. bestehende Buchungen.');">Alle Freigaben zurückziehen</button>
+      </form>
+    </div>
     <form method="post" action="/owner/withdraw_series" class="row g-2 align-items-end">
       <input type="hidden" name="code" value="{{ code }}" />
       <div class="col-sm-3">
