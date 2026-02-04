@@ -1,0 +1,18 @@
+# runtime / local
+__pycache__/
+*.pyc
+*.sqlite3
+
+# local secrets & generated tokens
+parking_app/secrets/
+parking_app/data/
+
+# do not commit customer parking plan assets
+parking_app/plan/
+parking_app/static/plan_annotated.png
+
+# venv
+.venv*/
+
+# systemd/nginx local machine specifics
+*.log

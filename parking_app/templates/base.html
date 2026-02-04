@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{{ title or "Parkplatzportal" }}</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      /* Look-and-feel an https://www.vr-rheinahreifel.de/ angelehnt (VR Grün + VR Gelb). */
+      --vr-green: #00683B;
+      --vr-green-2: #005A33;
+      --vr-yellow: #FFD200;
+      --vr-bg: #ffffff;
+      --vr-card: #FFFFFF;
+      --vr-text: #111827;
+      --vr-muted: #6b7280;
+      --vr-border: #E5E7EB;
+    }
+
+    body {
+      padding-top: 16px;
+      background: var(--vr-bg);
+      color: var(--vr-text);
+      font-family: Roboto, system-ui, -apple-system, Segoe UI, Arial, sans-serif;
+    }
+
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+
+    .brand-head{
+      background: linear-gradient(90deg, var(--vr-green), var(--vr-green-2));
+      color: #fff;
+      border-radius: 14px;
+      padding: 12px 14px;
+      box-shadow: 0 10px 30px rgba(2, 6, 23, 0.10);
+    }
+
+    .brand-logo{
+      height: 28px;
+      width: auto;
+      background: #fff;
+      padding: 6px 8px;
+      border-radius: 10px;
+    }
+
+    .brand-sub{ color: rgba(255,255,255,0.88); }
+
+    .btn-brand{
+      --bs-btn-bg: var(--vr-yellow);
+      --bs-btn-border-color: var(--vr-yellow);
+      --bs-btn-color: #111827;
+      --bs-btn-hover-bg: #ffe25a;
+      --bs-btn-hover-border-color: #ffe25a;
+      --bs-btn-hover-color: #111827;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+    }
+
+    .btn-brand-outline{
+      --bs-btn-color: #fff;
+      --bs-btn-border-color: rgba(255,255,255,0.65);
+      --bs-btn-hover-bg: rgba(255,255,255,0.12);
+      --bs-btn-hover-border-color: rgba(255,255,255,0.85);
+    }
+
+    .card{ border-radius: 14px; border: 1px solid var(--vr-border); box-shadow: 0 6px 18px rgba(17, 24, 39, 0.06); }
+    .text-muted{ color: var(--vr-muted) !important; }
+    .table{ --bs-table-border-color: var(--vr-border); }
+    .btn-outline-primary{ --bs-btn-border-color: rgba(0,104,59,0.45); --bs-btn-color: var(--vr-green); }
+    .btn-outline-primary:hover{ background: rgba(0,104,59,0.10); }
+
+    /* stronger attention pulse (brand yellow) */
+    @keyframes blinkSoft {
+      0%, 100% {
+        filter: brightness(1);
+        box-shadow: 0 0 0 0 rgba(246,201,0,0.0);
+        transform: scale(1);
+      }
+      50% {
+        filter: brightness(1.15);
+        box-shadow: 0 0 0 12px rgba(246,201,0,0.35);
+        transform: scale(1.03);
+      }
+    }
+    .blink-soft { animation: blinkSoft 1.6s ease-in-out infinite; }
+    @media (prefers-reduced-motion: reduce) { .blink-soft { animation: none; } }
+  </style>
+</head>
+<body>
+<div class="container" style="max-width: 920px">
+  <header class="mb-4">
+    <div class="brand-head">
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-3">
+          <img class="brand-logo" alt="VR Bank RheinAhrEifel" src="https://atruvia.scene7.com/is/image/atruvia/Logo-Homebutton_Website" />
+          <div>
+            <h1 class="h4 mb-1">Parkplatzportal</h1>
+            <div class="brand-sub small">Parkplätze teilen · ganztägig · bis {{ maxAhead or 90 }} Tage</div>
+          </div>
+        </div>
+        <div class="d-flex gap-2">
+          <a class="btn btn-sm btn-brand-outline" href="/">Start</a>
+          <a class="btn btn-sm btn-brand-outline" href="/owner">Owner</a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  {% block content %}{% endblock %}
+
+  <footer class="mt-5 text-muted small">
+    MVP auf dem VPS · Keine Namen nötig · Verwaltung über Owner-/Buchungscode
+  </footer>
+</div>
+</body>
+</html>

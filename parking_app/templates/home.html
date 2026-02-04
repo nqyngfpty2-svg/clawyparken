@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card">
+  <div class="card-body">
+    <h2 class="h5">Buchen</h2>
+    <p class="text-muted mb-3">Wähle einen Tag, um angebotene Parkplätze zu sehen.</p>
+
+    <form class="row g-2" method="get" action="/day/{{ day or '' }}" onsubmit="event.preventDefault(); window.location='/day/'+document.getElementById('day').value;">
+      <div class="col-sm-4">
+        <input id="day" type="date" class="form-control" required />
+      </div>
+      <div class="col-sm-3">
+        <button class="btn btn-primary w-100" type="submit">Tag öffnen</button>
+      </div>
+    </form>
+
+    <hr />
+    <div class="d-flex justify-content-between align-items-center">
+      <div>
+        <h2 class="h5 mb-0">Owner</h2>
+        <div class="text-muted small">Nur für Platzinhaber mit Owner-Code.</div>
+      </div>
+      <a class="btn btn-outline-secondary btn-sm" href="/owner">Owner-Portal öffnen</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

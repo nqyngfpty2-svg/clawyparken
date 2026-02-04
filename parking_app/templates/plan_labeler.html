@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 class="h5">Parkplatz-Plan nummerieren</h2>
+
+<div class="alert alert-info">
+  Klicke auf jeden Parkplatz in der gewünschten Reihenfolge. Jeder Klick setzt die nächste Nummer.
+  <br />
+  <strong>Tipp:</strong> Zoom im Browser nutzen. Mit „Undo“ entfernst du den letzten Punkt.
+</div>
+
+<div class="d-flex gap-2 mb-2">
+  <button class="btn btn-sm btn-outline-secondary" onclick="undo()">Undo</button>
+  <button class="btn btn-sm btn-outline-danger" onclick="resetAll()">Alles löschen</button>
+  <a class="btn btn-sm btn-primary" href="/plan/annotated.png" target="_blank">Annotiertes Bild öffnen</a>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <div class="text-muted small mb-2">Nächste Nummer: <span id="nextN" class="mono">?</span></div>
+    <div style="overflow:auto; border:1px solid #eee;">
+      <canvas id="c"></canvas>
+    </div>
+  </div>
+</div>
+
+<script>
+const token = "{{ token }}";
+let labels = [];
+
+async function load(){
+  const r = await fetch(`/plan/api/labels?k=${encodeURIComponent(token)}`);
+  labels = await r.json();
+  document.getElementById('nextN').innerText = (labels.length+1);
+  await draw();
+}
+
+async function draw(){
+  const img = new Image();
+  img.src = '/plan/raw.png';
+  await new Promise(res => img.onload = res);
+  const c = document.getElementById('c');
+  c.width = img.width;
+  c.height = img.height;
+  const ctx = c.getContext('2d');
+  ctx.drawImage(img,0,0);
+  ctx.font = '26px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  labels.forEach(l => {
+    const x = l.x, y = l.y, n = l.n;
+    ctx.beginPath();
+    ctx.arc(x,y,18,0,Math.PI*2);
+    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#000';
+    ctx.stroke();
+    ctx.fillStyle = '#000';
+    ctx.fillText(String(n), x, y-1);
+  });
+}
+
+async function addLabel(x,y){
+  const r = await fetch(`/plan/api/add?k=${encodeURIComponent(token)}`, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({x, y})
+  });
+  labels = await r.json();
+  document.getElementById('nextN').innerText = (labels.length+1);
+  await draw();
+}
+
+async function undo(){
+  const r = await fetch(`/plan/api/undo?k=${encodeURIComponent(token)}`, {method:'POST'});
+  labels = await r.json();
+  document.getElementById('nextN').innerText = (labels.length+1);
+  await draw();
+}
+
+async function resetAll(){
+  if(!confirm('Wirklich alles löschen?')) return;
+  const r = await fetch(`/plan/api/reset?k=${encodeURIComponent(token)}`, {method:'POST'});
+  labels = await r.json();
+  document.getElementById('nextN').innerText = (labels.length+1);
+  await draw();
+}
+
+document.getElementById('c').addEventListener('click', (ev) => {
+  const rect = ev.target.getBoundingClientRect();
+  const x = Math.round((ev.clientX - rect.left));
+  const y = Math.round((ev.clientY - rect.top));
+  addLabel(x,y);
+});
+
+load();
+</script>
+
+{% endblock %}

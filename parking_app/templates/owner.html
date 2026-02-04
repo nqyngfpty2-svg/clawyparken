@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 class="h5">Owner: <span class="mono">{{ spot }}</span></h2>
+
+<div class="alert alert-info">
+  Tipp: „Anbieten“ für Homeoffice-Tage. Wenn schon gebucht: Rückzug storniert die Buchung und verschickt eine E-Mail.
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <h3 class="h6">Zeitraum anbieten (Serie)</h3>
+    <form method="post" action="/owner/offer_series" class="row g-2 align-items-end">
+      <input type="hidden" name="code" value="{{ code }}" />
+      <div class="col-sm-3">
+        <label class="form-label mb-1">Von</label>
+        <input class="form-control form-control-sm" type="date" name="start_day" required />
+      </div>
+      <div class="col-sm-3">
+        <label class="form-label mb-1">Bis</label>
+        <input class="form-control form-control-sm" type="date" name="end_day" required />
+      </div>
+      <div class="col-sm-4">
+        <label class="form-label mb-1">Wochentage</label>
+        <div class="d-flex flex-wrap gap-2">
+          <div class="form-check"><input class="form-check-input" type="checkbox" name="weekdays" value="0" id="wd0"><label class="form-check-label" for="wd0">Mo</label></div>
+          <div class="form-check"><input class="form-check-input" type="checkbox" name="weekdays" value="1" id="wd1"><label class="form-check-label" for="wd1">Di</label></div>
+          <div class="form-check"><input class="form-check-input" type="checkbox" name="weekdays" value="2" id="wd2"><label class="form-check-label" for="wd2">Mi</label></div>
+          <div class="form-check"><input class="form-check-input" type="checkbox" name="weekdays" value="3" id="wd3"><label class="form-check-label" for="wd3">Do</label></div>
+          <div class="form-check"><input class="form-check-input" type="checkbox" name="weekdays" value="4" id="wd4"><label class="form-check-label" for="wd4">Fr</label></div>
+        </div>
+        <div class="text-muted small mt-1">Nur bis {{ maxAhead or 90 }} Tage im Voraus.</div>
+      </div>
+      <div class="col-sm-2">
+        <button class="btn btn-sm btn-primary w-100" type="submit">Serie anbieten</button>
+      </div>
+    </form>
+
+    <hr class="my-3" />
+
+    <h3 class="h6">Zeitraum zurücknehmen (Serie)</h3>
+    <form method="post" action="/owner/withdraw_series" class="row g-2 align-items-end">
+      <input type="hidden" name="code" value="{{ code }}" />
+      <div class="col-sm-3">
+        <label class="form-label mb-1">Von</label>
+        <input class="form-control form-control-sm" type="date" name="start_day" required />
+      </div>
+      <div class="col-sm-3">
+        <label class="form-label mb-1">Bis</label>
+        <input class="form-control form-control-sm" type="date" name="end_day" required />
+      </div>
+      <div class="col-sm-4">
+        <label class="form-label mb-1">Wochentage</label>
+        <div class="d-flex flex-wrap gap-2">
+          <div class="form-check"><input class="form-check-input" type="checkbox" name="weekdays" value="0" id="wdx0"><label class="form-check-label" for="wdx0">Mo</label></div>
+          <div class="form-check"><input class="form-check-input" type="checkbox" name="weekdays" value="1" id="wdx1"><label class="form-check-label" for="wdx1">Di</label></div>
+          <div class="form-check"><input class="form-check-input" type="checkbox" name="weekdays" value="2" id="wdx2"><label class="form-check-label" for="wdx2">Mi</label></div>
+          <div class="form-check"><input class="form-check-input" type="checkbox" name="weekdays" value="3" id="wdx3"><label class="form-check-label" for="wdx3">Do</label></div>
+          <div class="form-check"><input class="form-check-input" type="checkbox" name="weekdays" value="4" id="wdx4"><label class="form-check-label" for="wdx4">Fr</label></div>
+        </div>
+        <div class="text-muted small mt-1">Entfernt Angebote in diesem Muster (keine E-Mails; anonym).</div>
+      </div>
+      <div class="col-sm-2">
+        <button class="btn btn-sm btn-outline-danger w-100" type="submit">Serie zurücknehmen</button>
+      </div>
+    </form>
+
+  </div>
+</div>
+
+<div class="table-responsive">
+  <table class="table table-sm align-middle">
+    <thead>
+      <tr>
+        <th>Tag</th>
+        <th>Angeboten</th>
+        <th>Buchung</th>
+        <th>Aktion</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td class="mono">{{ r.day }}</td>
+        <td>
+          {% if r.offered %}
+            <span class="badge text-bg-success">ja</span>
+          {% else %}
+            <span class="badge text-bg-secondary">nein</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if r.booking_status == 'active' %}
+            <span class="badge text-bg-warning">gebucht</span>
+          {% elif r.booking_status %}
+            <span class="badge text-bg-secondary">{{ r.booking_status }}</span>
+          {% else %}
+            <span class="text-muted">—</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if not r.offered %}
+            <form method="post" action="/owner/offer" class="d-inline">
+              <input type="hidden" name="code" value="{{ code }}" />
+              <input type="hidden" name="day" value="{{ r.day }}" />
+              <button class="btn btn-sm btn-outline-primary" type="submit">Anbieten</button>
+            </form>
+          {% else %}
+            <form method="post" action="/owner/withdraw" class="d-inline">
+              <input type="hidden" name="code" value="{{ code }}" />
+              <input type="hidden" name="day" value="{{ r.day }}" />
+              <input type="hidden" name="reason" value="Owner hat den Parkplatz wieder benötigt" />
+              <button class="btn btn-sm btn-outline-danger" type="submit">Zurückziehen</button>
+            </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="mt-3">
+  <a class="btn btn-outline-secondary btn-sm" href="/owner">Code wechseln</a>
+</div>
+
+{% endblock %}
