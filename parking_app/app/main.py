@@ -18,6 +18,7 @@ app = FastAPI(title="Parkplatz-Share")
 
 BASE_DIR = __import__("pathlib").Path(__file__).resolve().parents[1]
 TEMPLATES = Jinja2Templates(directory=str(BASE_DIR / "templates"))
+TEMPLATES.env.globals["year"] = datetime.utcnow().year
 
 app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
 
@@ -86,7 +87,7 @@ def plan_labeler(request: Request, k: str = ""):
     token = ensure_admin_token()
     if k != token:
         return PlainTextResponse("Forbidden", status_code=403)
-    return TEMPLATES.TemplateResponse("plan_labeler.html", {"request": request, "token": token})
+    return TEMPLATES.TemplateResponse("plan_labeler.html", {"request": request, "token": token, "year": datetime.utcnow().year})
 
 
 @app.get("/plan/api/labels")
@@ -153,7 +154,7 @@ def day_view(request: Request, day: str):
         ).fetchall()
     return TEMPLATES.TemplateResponse(
         "day.html",
-        {"request": request, "day": day, "offers": offers, "maxAhead": MAX_BOOK_AHEAD_DAYS},
+        {"request": request, "day": day, "offers": offers, "maxAhead": MAX_BOOK_AHEAD_DAYS, "year": datetime.utcnow().year},
     )
 
 
@@ -199,7 +200,7 @@ def manage(request: Request, token: str):
         ).fetchone()
     if not b:
         return PlainTextResponse("Ungültiger Link.", status_code=404)
-    return TEMPLATES.TemplateResponse("manage.html", {"request": request, "b": b, "token": token})
+    return TEMPLATES.TemplateResponse("manage.html", {"request": request, "b": b, "token": token, "year": datetime.utcnow().year})
 
 
 @app.get("/manage/{token}/download")
@@ -237,7 +238,7 @@ def cancel_booking(request: Request, token: str, reason: str = Form("")):
 
 @app.get("/owner", response_class=HTMLResponse)
 def owner_login(request: Request):
-    return TEMPLATES.TemplateResponse("owner_login.html", {"request": request})
+    return TEMPLATES.TemplateResponse("owner_login.html", {"request": request, "year": datetime.utcnow().year})
 
 
 @app.post("/owner", response_class=HTMLResponse)
@@ -268,7 +269,7 @@ def owner_portal(request: Request, code: str = Form(...)):
 
     return TEMPLATES.TemplateResponse(
         "owner.html",
-        {"request": request, "spot": spot["name"], "code": code, "rows": rows},
+        {"request": request, "spot": spot["name"], "code": code, "rows": rows, "year": datetime.utcnow().year},
     )
 
 
