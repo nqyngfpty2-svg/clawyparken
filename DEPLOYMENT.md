@@ -41,6 +41,11 @@ Lege deinen Plan als PNG ab:
 
 (Die App liefert `/plan/raw.png` und erzeugt `/plan/annotated.png` aus den Klick-Labels.)
 
+## Docker (Plesk-freundlich)
+
+- Dockerfile ist im Repo.
+- Anleitung: [deploy/plesk-docker.md](./deploy/plesk-docker.md)
+
 ## 4) Start (Dev)
 
 ```bash

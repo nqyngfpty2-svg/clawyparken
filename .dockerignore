@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+*.sqlite3
+
+# local-only
+parking_app/secrets/
+parking_app/data/
+parking_app/plan/
+parking_app/static/plan_annotated.png
+
+.venv*/
+.git/

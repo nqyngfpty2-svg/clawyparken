@@ -1,0 +1,15 @@
+services:
+  clawyparken:
+    build: .
+    ports:
+      - "127.0.0.1:18880:18880"
+    volumes:
+      - clawyparken_data:/app/parking_app/data
+      - clawyparken_secrets:/app/parking_app/secrets
+      - clawyparken_plan:/app/parking_app/plan
+    restart: unless-stopped
+
+volumes:
+  clawyparken_data:
+  clawyparken_secrets:
+  clawyparken_plan:
