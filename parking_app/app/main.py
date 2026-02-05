@@ -82,6 +82,77 @@ def admin_login(request: Request):
     return TEMPLATES.TemplateResponse("admin_login.html", {"request": request})
 
 
+@app.get("/admin/diag", response_class=HTMLResponse)
+def admin_diag(request: Request, code: str):
+    code = (code or "").strip()
+    real = ensure_admin_code(SECRETS_DIR)
+    if code != real:
+        return PlainTextResponse("forbidden", status_code=403)
+
+    # counts
+    with connect() as con:
+        counts = {
+            "spots": con.execute("SELECT COUNT(*) AS c FROM spots").fetchone()["c"],
+            "offers": con.execute("SELECT COUNT(*) AS c FROM offers").fetchone()["c"],
+            "bookings": con.execute("SELECT COUNT(*) AS c FROM bookings").fetchone()["c"],
+        }
+
+        # offers next 30 days
+        today = date.today()
+        days = [(today + timedelta(days=i)).strftime("%Y-%m-%d") for i in range(0, 30)]
+        offers_next = []
+        for d in days:
+            off = con.execute("SELECT COUNT(*) AS c FROM offers WHERE day=?", (d,)).fetchone()["c"]
+            act = con.execute(
+                "SELECT COUNT(*) AS c FROM bookings WHERE day=? AND status='active'",
+                (d,),
+            ).fetchone()["c"]
+            if off or act:
+                offers_next.append({"day": d, "offers": off, "active_bookings": act})
+
+    # basic route listing
+    want = [
+        "/",
+        "/day/{day}",
+        "/book",
+        "/manage/{token}",
+        "/manage/{token}/cancel",
+        "/series",
+        "/owner",
+        "/owner/portal",
+        "/owner/bookings",
+        "/admin",
+        "/admin/save",
+        "/admin/diag",
+    ]
+    routes = []
+    for r in app.routes:
+        path = getattr(r, "path", "")
+        methods = sorted(list(getattr(r, "methods", []) or []))
+        if path in want:
+            routes.append({"path": path, "methods": methods})
+    routes.sort(key=lambda x: want.index(x["path"]))
+
+    now_utc = datetime.utcnow().replace(microsecond=0).isoformat() + "Z"
+    # keep it simple (avoid extra subprocess helpers)
+    now_berlin = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+
+    return TEMPLATES.TemplateResponse(
+        "admin_diag.html",
+        {
+            "request": request,
+            "code": code,
+            "counts": counts,
+            "offers_next": offers_next,
+            "routes": routes,
+            "max_ahead": MAX_BOOK_AHEAD_DAYS,
+            "now_utc": now_utc,
+            "now_berlin": now_berlin,
+            "year": datetime.utcnow().year,
+        },
+    )
+
+
 @app.post("/admin", response_class=HTMLResponse)
 def admin_portal(request: Request, code: str = Form(...)):
     code = (code or "").strip()

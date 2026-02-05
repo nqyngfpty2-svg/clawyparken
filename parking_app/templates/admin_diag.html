@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 class="h5">Admin – Diagnose</h2>
+
+<div class="d-flex justify-content-between align-items-center mb-2">
+  <a class="btn btn-outline-secondary btn-sm" href="/admin?code={{ code }}">← Zurück</a>
+  <a class="btn btn-outline-secondary btn-sm" href="/admin/diag?code={{ code }}">Neu laden</a>
+</div>
+
+<div class="alert alert-info">
+  Read-only. Keine Buchungen werden ausgelöst.
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-6">
+    <div class="card">
+      <div class="card-body">
+        <h3 class="h6">System</h3>
+        <div><strong>Zeit (UTC):</strong> <span class="mono">{{ now_utc }}</span></div>
+        <div><strong>Zeit (Berlin):</strong> <span class="mono">{{ now_berlin }}</span></div>
+        <div><strong>MAX_BOOK_AHEAD_DAYS:</strong> <span class="mono">{{ max_ahead }}</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="card">
+      <div class="card-body">
+        <h3 class="h6">Datenbank</h3>
+        <div><strong>Spots:</strong> <span class="mono">{{ counts.spots }}</span></div>
+        <div><strong>Offers (gesamt):</strong> <span class="mono">{{ counts.offers }}</span></div>
+        <div><strong>Bookings (gesamt):</strong> <span class="mono">{{ counts.bookings }}</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12">
+    <div class="card">
+      <div class="card-body">
+        <h3 class="h6">Offers – nächste 30 Tage</h3>
+        {% if offers_next|length == 0 %}
+          <div class="text-muted">Keine Offers in den nächsten 30 Tagen.</div>
+        {% else %}
+          <div class="table-responsive">
+            <table class="table table-sm align-middle">
+              <thead>
+                <tr>
+                  <th>Tag</th>
+                  <th>Anzahl Offers</th>
+                  <th>Anzahl aktive Buchungen</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for r in offers_next %}
+                <tr>
+                  <td class="mono">{{ r.day }}</td>
+                  <td class="mono">{{ r.offers }}</td>
+                  <td class="mono">{{ r.active_bookings }}</td>
+                  <td><a class="btn btn-sm btn-outline-primary" href="/day/{{ r.day }}">Tag öffnen</a></td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12">
+    <div class="card">
+      <div class="card-body">
+        <h3 class="h6">Routen (Existenzcheck)</h3>
+        <ul class="mb-0">
+          {% for r in routes %}
+            <li><span class="mono">{{ r.path }}</span> – <span class="mono">{{ r.methods|join(',') }}</span></li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
