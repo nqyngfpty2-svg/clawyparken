@@ -22,7 +22,8 @@ TEMPLATES.env.globals["year"] = datetime.utcnow().year
 
 app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
 
-MAX_BOOK_AHEAD_DAYS = 90
+# Booking/offer horizon. Previously 90 days; intentionally generous so owners can plan far ahead.
+MAX_BOOK_AHEAD_DAYS = 3650  # ~10 years
 OWNER_WITHDRAW_MIN_DAYS = 1  # owner must withdraw at least 1 day before
 
 
