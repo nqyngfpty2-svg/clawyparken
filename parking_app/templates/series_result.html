@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 class="h5">Serienbuchung – Ergebnis</h2>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <div><strong>Parkplatz:</strong> <span class="mono">{{ spot }}</span></div>
+    <div><strong>Zeitraum:</strong> <span class="mono">{{ start_day }}</span> bis <span class="mono">{{ end_day }}</span></div>
+    <div><strong>Modus:</strong> <span class="mono">{{ mode }}</span></div>
+  </div>
+</div>
+
+{% if hard_failed %}
+  <div class="alert alert-danger">
+    <strong>Hard-Modus:</strong> Serienbuchung wurde abgebrochen (Rollback). Keine Buchung wurde angelegt.
+  </div>
+{% endif %}
+
+<div class="row g-3">
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-body">
+        <h3 class="h6">Erfolgreich gebucht ({{ booked|length }})</h3>
+        {% if booked|length == 0 %}
+          <div class="text-muted">—</div>
+        {% else %}
+          <ul class="mb-0">
+          {% for b in booked %}
+            <li><span class="mono">{{ b.day }}</span> – <a href="{{ b.link }}" target="_blank">Buchungslink</a></li>
+          {% endfor %}
+          </ul>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-body">
+        <h3 class="h6">Nicht möglich ({{ failed|length }})</h3>
+        {% if failed|length == 0 %}
+          <div class="text-muted">—</div>
+        {% else %}
+          <ul class="mb-0">
+          {% for f in failed %}
+            <li><span class="mono">{{ f.day }}</span> – {{ f.reason }}</li>
+          {% endfor %}
+          </ul>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="mt-3">
+  <a class="btn btn-outline-primary btn-sm" href="/series">Neue Serienbuchung</a>
+</div>
+
+{% endblock %}

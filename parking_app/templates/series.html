@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 class="h5">Serienbuchung</h2>
+
+<div class="card">
+  <div class="card-body">
+    <p class="text-muted">Bucht den ausgewählten Parkplatz für alle passenden Tage im Zeitraum, sofern er an diesen Tagen angeboten und frei ist.</p>
+
+    {% if error %}
+      <div class="alert alert-danger">{{ error }}</div>
+    {% endif %}
+
+    <form method="post" action="/series" class="row g-2 align-items-end">
+      <div class="col-sm-3">
+        <label class="form-label mb-1">Parkplatz</label>
+        <select class="form-select form-select-sm mono" name="spot" required>
+          {% for s in spots %}
+            <option value="{{ s }}" {% if prefill_spot==s %}selected{% endif %}>{{ s }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-sm-3">
+        <label class="form-label mb-1">Von</label>
+        <input class="form-control form-control-sm" type="date" name="start_day" value="{{ prefill_start or '' }}" required />
+      </div>
+      <div class="col-sm-3">
+        <label class="form-label mb-1">Bis</label>
+        <input class="form-control form-control-sm" type="date" name="end_day" value="{{ prefill_end or '' }}" required />
+      </div>
+      <div class="col-sm-3">
+        <label class="form-label mb-1">Modus</label>
+        <select class="form-select form-select-sm" name="mode" required>
+          <option value="hard">Hard (Rollback bei Kollision)</option>
+          <option value="soft">Soft (Buche was geht)</option>
+        </select>
+      </div>
+
+      <div class="col-12">
+        <label class="form-label mb-1">Wochentage</label>
+        <div class="d-flex flex-wrap gap-2">
+          <div class="form-check"><input class="form-check-input" type="checkbox" name="weekdays" value="0" id="swd0" checked><label class="form-check-label" for="swd0">Mo</label></div>
+          <div class="form-check"><input class="form-check-input" type="checkbox" name="weekdays" value="1" id="swd1" checked><label class="form-check-label" for="swd1">Di</label></div>
+          <div class="form-check"><input class="form-check-input" type="checkbox" name="weekdays" value="2" id="swd2" checked><label class="form-check-label" for="swd2">Mi</label></div>
+          <div class="form-check"><input class="form-check-input" type="checkbox" name="weekdays" value="3" id="swd3"><label class="form-check-label" for="swd3">Do</label></div>
+          <div class="form-check"><input class="form-check-input" type="checkbox" name="weekdays" value="4" id="swd4"><label class="form-check-label" for="swd4">Fr</label></div>
+          <div class="form-check"><input class="form-check-input" type="checkbox" name="weekdays" value="5" id="swd5"><label class="form-check-label" for="swd5">Sa</label></div>
+          <div class="form-check"><input class="form-check-input" type="checkbox" name="weekdays" value="6" id="swd6"><label class="form-check-label" for="swd6">So</label></div>
+        </div>
+        <div class="text-muted small mt-1">Nur bis {{ maxAhead or 90 }} Tage im Voraus.</div>
+      </div>
+
+      <div class="col-12 mt-2">
+        <button class="btn btn-brand" type="submit">Serienbuchung starten</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

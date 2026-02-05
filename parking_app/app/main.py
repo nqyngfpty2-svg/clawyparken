@@ -70,6 +70,180 @@ def home(request: Request):
     return TEMPLATES.TemplateResponse("home.html", {"request": request})
 
 
+@app.get("/series", response_class=HTMLResponse)
+def series_form(request: Request, spot: str = "", start: str = "", end: str = ""):
+    spots = [f"P{i:02d}" for i in range(1, 61)]
+    return TEMPLATES.TemplateResponse(
+        "series.html",
+        {
+            "request": request,
+            "spots": spots,
+            "prefill_spot": spot if spot in spots else "",
+            "prefill_start": start,
+            "prefill_end": end,
+            "maxAhead": MAX_BOOK_AHEAD_DAYS,
+        },
+    )
+
+
+@app.post("/series", response_class=HTMLResponse)
+def series_book(
+    request: Request,
+    spot: str = Form(...),
+    start_day: str = Form(...),
+    end_day: str = Form(...),
+    mode: str = Form(...),
+    weekdays: Optional[list[str]] = Form(None),
+):
+    spot = spot.strip().upper()
+
+    try:
+        start = parse_day(start_day)
+        end = parse_day(end_day)
+    except Exception:
+        return TEMPLATES.TemplateResponse(
+            "series.html",
+            {
+                "request": request,
+                "spots": [f"P{i:02d}" for i in range(1, 61)],
+                "prefill_spot": spot,
+                "prefill_start": start_day,
+                "prefill_end": end_day,
+                "maxAhead": MAX_BOOK_AHEAD_DAYS,
+                "error": "Ungültiges Datum.",
+            },
+            status_code=400,
+        )
+
+    if end < start:
+        return TEMPLATES.TemplateResponse(
+            "series.html",
+            {
+                "request": request,
+                "spots": [f"P{i:02d}" for i in range(1, 61)],
+                "prefill_spot": spot,
+                "prefill_start": start_day,
+                "prefill_end": end_day,
+                "maxAhead": MAX_BOOK_AHEAD_DAYS,
+                "error": "Ende liegt vor Start.",
+            },
+            status_code=400,
+        )
+
+    if mode not in ("hard", "soft"):
+        mode = "hard"
+
+    allowed_wd = set()
+    for w in (weekdays or []):
+        try:
+            wi = int(w)
+        except Exception:
+            continue
+        if 0 <= wi <= 6:
+            allowed_wd.add(wi)
+    if not allowed_wd:
+        return TEMPLATES.TemplateResponse(
+            "series.html",
+            {
+                "request": request,
+                "spots": [f"P{i:02d}" for i in range(1, 61)],
+                "prefill_spot": spot,
+                "prefill_start": start_day,
+                "prefill_end": end_day,
+                "maxAhead": MAX_BOOK_AHEAD_DAYS,
+                "error": "Bitte mindestens einen Wochentag wählen.",
+            },
+            status_code=400,
+        )
+
+    today = date.today()
+    max_day = today + timedelta(days=MAX_BOOK_AHEAD_DAYS)
+
+    base = str(request.base_url).rstrip("/")
+
+    def reason_for_day(d: date, spot_id: int) -> Optional[str]:
+        day_s = d.strftime("%Y-%m-%d")
+        if d < today:
+            return "liegt in der Vergangenheit"
+        if d > max_day:
+            return "liegt außerhalb der 90-Tage-Grenze"
+        # must have offer
+        off = con.execute("SELECT 1 FROM offers WHERE spot_id=? AND day=?", (spot_id, day_s)).fetchone()
+        if not off:
+            return "nicht angeboten"
+        # check booking collision
+        existing = con.execute("SELECT status FROM bookings WHERE spot_id=? AND day=?", (spot_id, day_s)).fetchone()
+        if existing and existing["status"] == "active":
+            return "bereits gebucht"
+        return None
+
+    booked: list[dict] = []
+    failed: list[dict] = []
+    hard_failed = False
+
+    with connect() as con:
+        row = con.execute("SELECT id FROM spots WHERE name=?", (spot,)).fetchone()
+        if not row:
+            return PlainTextResponse("Unbekannter Parkplatz", status_code=400)
+        spot_id = row["id"]
+
+        # pre-check for hard mode
+        targets: list[date] = [d for d in daterange(start, end) if d.weekday() in allowed_wd]
+
+        if mode == "hard":
+            for d in targets:
+                r = reason_for_day(d, spot_id)
+                if r:
+                    failed.append({"day": d.strftime("%Y-%m-%d"), "reason": r})
+            if failed:
+                hard_failed = True
+                # no changes
+                return TEMPLATES.TemplateResponse(
+                    "series_result.html",
+                    {
+                        "request": request,
+                        "spot": spot,
+                        "start_day": start_day,
+                        "end_day": end_day,
+                        "mode": mode,
+                        "booked": [],
+                        "failed": failed,
+                        "hard_failed": True,
+                    },
+                    status_code=409,
+                )
+
+        # soft mode: attempt what we can
+        for d in targets:
+            day_s = d.strftime("%Y-%m-%d")
+            r = reason_for_day(d, spot_id)
+            if r:
+                failed.append({"day": day_s, "reason": r})
+                continue
+            token = secrets.token_urlsafe(24)
+            con.execute(
+                "INSERT OR REPLACE INTO bookings(spot_id, day, booker_email, status, created_at, manage_token) VALUES(?,?,?,?,?,?)",
+                (spot_id, day_s, "", "active", now_iso(), token),
+            )
+            booked.append({"day": day_s, "link": f"{base}/manage/{token}"})
+
+        con.commit()
+
+    return TEMPLATES.TemplateResponse(
+        "series_result.html",
+        {
+            "request": request,
+            "spot": spot,
+            "start_day": start_day,
+            "end_day": end_day,
+            "mode": mode,
+            "booked": booked,
+            "failed": failed,
+            "hard_failed": False,
+        },
+    )
+
+
 @app.get("/plan/raw.png")
 def plan_raw():
     return FileResponse(str(PLAN_IMAGE), media_type="image/png")
