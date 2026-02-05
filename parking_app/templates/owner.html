@@ -2,18 +2,8 @@
 {% block content %}
 <h2 class="h5">Owner: <span class="mono">{{ spot }}</span></h2>
 
-<div class="d-flex justify-content-between align-items-center mb-2">
-  <div class="text-muted small">
-    Zeitraum: <span class="mono">{{ page_start }}</span> – <span class="mono">{{ page_end }}</span>
-  </div>
-  <div class="d-flex gap-2">
-    {% if has_prev %}
-      <a class="btn btn-sm btn-outline-secondary" href="/owner/portal?code={{ code }}&p={{ p-1 }}">← Vorherige 14 Tage</a>
-    {% endif %}
-    {% if has_next %}
-      <a class="btn btn-sm btn-outline-secondary" href="/owner/portal?code={{ code }}&p={{ p+1 }}">Nächste 14 Tage →</a>
-    {% endif %}
-  </div>
+<div class="text-muted small mb-2">
+  Zeitraum: <span class="mono">{{ page_start }}</span> – <span class="mono">{{ page_end }}</span>
 </div>
 
 <div class="alert alert-info">
@@ -147,8 +137,16 @@
   </table>
 </div>
 
-<div class="mt-3">
+<div class="d-flex justify-content-between align-items-center mt-3">
   <a class="btn btn-outline-secondary btn-sm" href="/owner">Code wechseln</a>
+  <div class="d-flex gap-2">
+    {% if has_prev %}
+      <a class="btn btn-sm btn-outline-secondary" href="/owner/portal?code={{ code }}&p={{ p-1 }}">← Vorherige 14 Tage</a>
+    {% endif %}
+    {% if has_next %}
+      <a class="btn btn-sm btn-outline-secondary" href="/owner/portal?code={{ code }}&p={{ p+1 }}">Nächste 14 Tage →</a>
+    {% endif %}
+  </div>
 </div>
 
 {% endblock %}
