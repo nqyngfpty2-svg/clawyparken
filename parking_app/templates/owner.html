@@ -13,8 +13,11 @@
 
 <h2 class="h5">Owner: <span class="mono">{{ spot }}</span></h2>
 
-<div class="text-muted small mb-2">
-  Zeitraum: <span class="mono">{{ page_start }}</span> – <span class="mono">{{ page_end }}</span>
+<div class="d-flex justify-content-between align-items-center mb-2">
+  <div class="text-muted small">
+    Zeitraum: <span class="mono">{{ page_start }}</span> – <span class="mono">{{ page_end }}</span>
+  </div>
+  <a class="btn btn-sm btn-outline-primary" href="/owner/bookings?code={{ code }}&p=0&portal_p={{ p }}">Alle Buchungen</a>
 </div>
 
 <div class="alert alert-info">

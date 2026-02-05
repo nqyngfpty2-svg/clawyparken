@@ -475,6 +475,53 @@ def owner_portal_get(request: Request, code: str, p: int = 0):
     )
 
 
+@app.get("/owner/bookings", response_class=HTMLResponse)
+def owner_bookings(request: Request, code: str, p: int = 0, portal_p: int = 0):
+    code = (code or "").strip().upper()
+    if p < 0:
+        p = 0
+    if portal_p < 0:
+        portal_p = 0
+
+    page_size = 50
+    offset = p * page_size
+
+    with connect() as con:
+        spot = con.execute("SELECT id, name FROM spots WHERE owner_code=?", (code,)).fetchone()
+        if not spot:
+            return RedirectResponse(url="/owner", status_code=303)
+
+        total = con.execute("SELECT COUNT(*) AS c FROM bookings WHERE spot_id=?", (spot["id"],)).fetchone()["c"]
+        rows = con.execute(
+            """
+            SELECT day, status, created_at, cancelled_at, cancel_reason
+            FROM bookings
+            WHERE spot_id=?
+            ORDER BY day DESC
+            LIMIT ? OFFSET ?
+            """,
+            (spot["id"], page_size, offset),
+        ).fetchall()
+
+    has_prev = p > 0
+    has_next = (offset + page_size) < total
+
+    return TEMPLATES.TemplateResponse(
+        "owner_bookings.html",
+        {
+            "request": request,
+            "spot": spot["name"],
+            "code": code,
+            "rows": rows,
+            "p": p,
+            "has_prev": has_prev,
+            "has_next": has_next,
+            "portal_p": portal_p,
+            "year": datetime.utcnow().year,
+        },
+    )
+
+
 @app.post("/owner", response_class=HTMLResponse)
 def owner_portal(request: Request, code: str = Form(...)):
     code = code.strip().upper()
