@@ -1,5 +1,16 @@
 {% extends "base.html" %}
 {% block content %}
+<script>
+  function toggleAllWeekdays(section, checked) {
+    let selector = 'input[name="weekdays"]';
+    if (section === 'offer') selector = 'form[action="/owner/offer_series"] input[name="weekdays"]';
+    if (section === 'withdraw') selector = 'form[action="/owner/withdraw_series"] input[name="weekdays"]';
+    // (series booking has its own page)
+    const boxes = document.querySelectorAll(selector);
+    boxes.forEach(b => { b.checked = checked; });
+  }
+</script>
+
 <h2 class="h5">Owner: <span class="mono">{{ spot }}</span></h2>
 
 <div class="text-muted small mb-2">
@@ -28,7 +39,9 @@
       </div>
       <div class="col-sm-4">
         <label class="form-label mb-1">Wochentage</label>
-        <div class="d-flex flex-wrap gap-2">
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+          <button class="btn btn-sm btn-outline-secondary" type="button" onclick="toggleAllWeekdays('offer', true)">Alle</button>
+          <button class="btn btn-sm btn-outline-secondary" type="button" onclick="toggleAllWeekdays('offer', false)">Keine</button>
           <div class="form-check"><input class="form-check-input" type="checkbox" name="weekdays" value="0" id="wd0"><label class="form-check-label" for="wd0">Mo</label></div>
           <div class="form-check"><input class="form-check-input" type="checkbox" name="weekdays" value="1" id="wd1"><label class="form-check-label" for="wd1">Di</label></div>
           <div class="form-check"><input class="form-check-input" type="checkbox" name="weekdays" value="2" id="wd2"><label class="form-check-label" for="wd2">Mi</label></div>
@@ -66,7 +79,9 @@
       </div>
       <div class="col-sm-4">
         <label class="form-label mb-1">Wochentage</label>
-        <div class="d-flex flex-wrap gap-2">
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+          <button class="btn btn-sm btn-outline-secondary" type="button" onclick="toggleAllWeekdays('withdraw', true)">Alle</button>
+          <button class="btn btn-sm btn-outline-secondary" type="button" onclick="toggleAllWeekdays('withdraw', false)">Keine</button>
           <div class="form-check"><input class="form-check-input" type="checkbox" name="weekdays" value="0" id="wdx0"><label class="form-check-label" for="wdx0">Mo</label></div>
           <div class="form-check"><input class="form-check-input" type="checkbox" name="weekdays" value="1" id="wdx1"><label class="form-check-label" for="wdx1">Di</label></div>
           <div class="form-check"><input class="form-check-input" type="checkbox" name="weekdays" value="2" id="wdx2"><label class="form-check-label" for="wdx2">Mi</label></div>
