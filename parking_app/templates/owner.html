@@ -2,6 +2,20 @@
 {% block content %}
 <h2 class="h5">Owner: <span class="mono">{{ spot }}</span></h2>
 
+<div class="d-flex justify-content-between align-items-center mb-2">
+  <div class="text-muted small">
+    Zeitraum: <span class="mono">{{ page_start }}</span> – <span class="mono">{{ page_end }}</span>
+  </div>
+  <div class="d-flex gap-2">
+    {% if has_prev %}
+      <a class="btn btn-sm btn-outline-secondary" href="/owner/portal?code={{ code }}&p={{ p-1 }}">← Vorherige 14 Tage</a>
+    {% endif %}
+    {% if has_next %}
+      <a class="btn btn-sm btn-outline-secondary" href="/owner/portal?code={{ code }}&p={{ p+1 }}">Nächste 14 Tage →</a>
+    {% endif %}
+  </div>
+</div>
+
 <div class="alert alert-info">
   Tipp: „Anbieten“ für Homeoffice-Tage.
   <br/>
@@ -13,6 +27,7 @@
     <h3 class="h6">Zeitraum anbieten (Serie)</h3>
     <form method="post" action="/owner/offer_series" class="row g-2 align-items-end">
       <input type="hidden" name="code" value="{{ code }}" />
+      <input type="hidden" name="p" value="{{ p }}" />
       <div class="col-sm-3">
         <label class="form-label mb-1">Von</label>
         <input class="form-control form-control-sm" type="date" name="start_day" required />
@@ -43,12 +58,14 @@
       <h3 class="h6 mb-0">Zeitraum zurücknehmen (Serie)</h3>
       <form method="post" action="/owner/withdraw_all" class="m-0">
         <input type="hidden" name="code" value="{{ code }}" />
+        <input type="hidden" name="p" value="{{ p }}" />
         <input type="hidden" name="reason" value="Owner hat alle Freigaben zurückgezogen" />
         <button class="btn btn-sm btn-danger" type="submit" onclick="return confirm('Wirklich ALLE zukünftigen Freigaben zurückziehen?\n\nDas storniert ggf. bestehende Buchungen.');">Alle Freigaben zurückziehen</button>
       </form>
     </div>
     <form method="post" action="/owner/withdraw_series" class="row g-2 align-items-end">
       <input type="hidden" name="code" value="{{ code }}" />
+      <input type="hidden" name="p" value="{{ p }}" />
       <div class="col-sm-3">
         <label class="form-label mb-1">Von</label>
         <input class="form-control form-control-sm" type="date" name="start_day" required />
@@ -110,12 +127,14 @@
           {% if not r.offered %}
             <form method="post" action="/owner/offer" class="d-inline">
               <input type="hidden" name="code" value="{{ code }}" />
+              <input type="hidden" name="p" value="{{ p }}" />
               <input type="hidden" name="day" value="{{ r.day }}" />
               <button class="btn btn-sm btn-outline-primary" type="submit">Anbieten</button>
             </form>
           {% else %}
             <form method="post" action="/owner/withdraw" class="d-inline">
               <input type="hidden" name="code" value="{{ code }}" />
+              <input type="hidden" name="p" value="{{ p }}" />
               <input type="hidden" name="day" value="{{ r.day }}" />
               <input type="hidden" name="reason" value="Owner hat den Parkplatz wieder benötigt" />
               <button class="btn btn-sm btn-outline-danger" type="submit">Zurückziehen</button>

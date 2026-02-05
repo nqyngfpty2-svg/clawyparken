@@ -415,6 +415,65 @@ def owner_login(request: Request):
     return TEMPLATES.TemplateResponse("owner_login.html", {"request": request, "year": datetime.utcnow().year})
 
 
+@app.get("/owner/portal", response_class=HTMLResponse)
+def owner_portal_get(request: Request, code: str, p: int = 0):
+    code = (code or "").strip().upper()
+    if p < 0:
+        p = 0
+
+    page_size = 14
+
+    with connect() as con:
+        spot = con.execute("SELECT id, name FROM spots WHERE owner_code=?", (code,)).fetchone()
+        if not spot:
+            return RedirectResponse(url="/owner", status_code=303)
+
+        today_d = date.today()
+        max_day = today_d + timedelta(days=MAX_BOOK_AHEAD_DAYS)
+
+        start_d = today_d + timedelta(days=p * page_size)
+        if start_d > max_day:
+            start_d = max_day
+
+        start_s = start_d.strftime("%Y-%m-%d")
+        # only show remaining days up to max_day
+        remaining = (max_day - start_d).days + 1
+        n_days = min(page_size, max(0, remaining))
+
+        days = berlin_day_list(start_s, n_days)
+        rows = []
+        for day in days:
+            off = con.execute("SELECT 1 FROM offers WHERE spot_id=? AND day=?", (spot["id"], day)).fetchone()
+            bk = con.execute("SELECT status, booker_email FROM bookings WHERE spot_id=? AND day=?", (spot["id"], day)).fetchone()
+            rows.append({
+                "day": day,
+                "offered": bool(off),
+                "booking_status": (bk["status"] if bk else None),
+                "booker_email": (bk["booker_email"] if bk else None),
+            })
+
+    page_start = days[0] if days else start_s
+    page_end = days[-1] if days else start_s
+    has_prev = p > 0
+    has_next = (start_d + timedelta(days=page_size)) <= max_day
+
+    return TEMPLATES.TemplateResponse(
+        "owner.html",
+        {
+            "request": request,
+            "spot": spot["name"],
+            "code": code,
+            "rows": rows,
+            "p": p,
+            "has_prev": has_prev,
+            "has_next": has_next,
+            "page_start": page_start,
+            "page_end": page_end,
+            "year": datetime.utcnow().year,
+        },
+    )
+
+
 @app.post("/owner", response_class=HTMLResponse)
 def owner_portal(request: Request, code: str = Form(...)):
     code = code.strip().upper()
@@ -427,28 +486,11 @@ def owner_portal(request: Request, code: str = Form(...)):
                 status_code=401,
             )
 
-        # show next 14 days
-        today = datetime.now().strftime("%Y-%m-%d")
-        days = berlin_day_list(today, 14)
-        rows = []
-        for day in days:
-            off = con.execute("SELECT 1 FROM offers WHERE spot_id=? AND day=?", (spot["id"], day)).fetchone()
-            bk = con.execute("SELECT status, booker_email FROM bookings WHERE spot_id=? AND day=?", (spot["id"], day)).fetchone()
-            rows.append({
-                "day": day,
-                "offered": bool(off),
-                "booking_status": (bk["status"] if bk else None),
-                "booker_email": (bk["booker_email"] if bk else None),
-            })
-
-    return TEMPLATES.TemplateResponse(
-        "owner.html",
-        {"request": request, "spot": spot["name"], "code": code, "rows": rows, "year": datetime.utcnow().year},
-    )
+    return RedirectResponse(url=f"/owner/portal?code={code}&p=0", status_code=303)
 
 
 @app.post("/owner/offer")
-def owner_offer(code: str = Form(...), day: str = Form(...)):
+def owner_offer(code: str = Form(...), day: str = Form(...), p: int = Form(0)):
     code = code.strip().upper()
     with connect() as con:
         spot = con.execute("SELECT id, name FROM spots WHERE owner_code=?", (code,)).fetchone()
@@ -459,7 +501,7 @@ def owner_offer(code: str = Form(...), day: str = Form(...)):
             (spot["id"], day, now_iso()),
         )
         con.commit()
-    return RedirectResponse(url="/owner", status_code=303)
+    return RedirectResponse(url=f"/owner/portal?code={code}&p={p}", status_code=303)
 
 
 @app.post("/owner/offer_series")
@@ -468,6 +510,7 @@ def owner_offer_series(
     start_day: str = Form(...),
     end_day: str = Form(...),
     weekdays: Optional[list[str]] = Form(None),
+    p: int = Form(0),
 ):
     """Create offers for a date range on selected weekdays.
 
@@ -520,7 +563,7 @@ def owner_offer_series(
             inserted += con.total_changes  # approximate
         con.commit()
 
-    return RedirectResponse(url="/owner", status_code=303)
+    return RedirectResponse(url=f"/owner/portal?code={code}&p={p}", status_code=303)
 
 
 @app.post("/owner/withdraw_series")
@@ -531,6 +574,7 @@ def owner_withdraw_series(
     end_day: str = Form(...),
     weekdays: Optional[list[str]] = Form(None),
     reason: str = Form(""),
+    p: int = Form(0),
 ):
     code = code.strip().upper()
 
@@ -587,11 +631,11 @@ def owner_withdraw_series(
 
         con.commit()
 
-    return RedirectResponse(url="/owner", status_code=303)
+    return RedirectResponse(url=f"/owner/portal?code={code}&p={p}", status_code=303)
 
 
 @app.post("/owner/withdraw_all")
-def owner_withdraw_all(code: str = Form(...), reason: str = Form("")):
+def owner_withdraw_all(code: str = Form(...), reason: str = Form(""), p: int = Form(0)):
     """Withdraw all future offers for this owner spot and cancel active bookings.
 
     Anonym mode: no notifications.
@@ -620,11 +664,11 @@ def owner_withdraw_all(code: str = Form(...), reason: str = Form("")):
         )
         con.commit()
 
-    return RedirectResponse(url="/owner", status_code=303)
+    return RedirectResponse(url=f"/owner/portal?code={code}&p={p}", status_code=303)
 
 
 @app.post("/owner/withdraw")
-def owner_withdraw(request: Request, code: str = Form(...), day: str = Form(...), reason: str = Form("")):
+def owner_withdraw(request: Request, code: str = Form(...), day: str = Form(...), reason: str = Form(""), p: int = Form(0)):
     code = code.strip().upper()
     with connect() as con:
         spot = con.execute("SELECT id, name FROM spots WHERE owner_code=?", (code,)).fetchone()
@@ -650,4 +694,4 @@ def owner_withdraw(request: Request, code: str = Form(...), day: str = Form(...)
         con.commit()
 
     # No e-mail notifications in anonym mode.
-    return RedirectResponse(url="/owner", status_code=303)
+    return RedirectResponse(url=f"/owner/portal?code={code}&p={p}", status_code=303)
