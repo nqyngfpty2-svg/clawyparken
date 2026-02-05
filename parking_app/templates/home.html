@@ -1,5 +1,21 @@
 {% extends "base.html" %}
 {% block content %}
+
+{% if ann %}
+  {% set level = ann.level or 'info' %}
+  {% if level == 'warn' %}
+    {% set cls = 'warning' %}
+  {% elif level == 'maint' %}
+    {% set cls = 'danger' %}
+  {% else %}
+    {% set cls = 'info' %}
+  {% endif %}
+  <div class="alert alert-{{ cls }}">
+    {% if ann.title %}<strong>{{ ann.title }}</strong><br/>{% endif %}
+    {% if ann.body %}{{ ann.body | replace('\n','<br/>') | safe }}{% endif %}
+  </div>
+{% endif %}
+
 <div class="card">
   <div class="card-body">
     <h2 class="h5">Buchen</h2>

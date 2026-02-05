@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 class="h5">Admin – Hinweis auf Startseite</h2>
+
+{% if saved %}
+  <div class="alert alert-success">Gespeichert.</div>
+{% endif %}
+
+<div class="card">
+  <div class="card-body">
+    <form method="post" action="/admin/save" class="row g-2">
+      <input type="hidden" name="code" value="{{ code }}" />
+
+      <div class="col-12">
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" name="enabled" id="en" {% if ann and ann.enabled %}checked{% endif %}>
+          <label class="form-check-label" for="en">Hinweis aktiv</label>
+        </div>
+      </div>
+
+      <div class="col-sm-3">
+        <label class="form-label mb-1">Stil</label>
+        <select class="form-select form-select-sm" name="level">
+          <option value="info" {% if ann and ann.level=='info' %}selected{% endif %}>Info</option>
+          <option value="warn" {% if ann and ann.level=='warn' %}selected{% endif %}>Warnung</option>
+          <option value="maint" {% if ann and ann.level=='maint' %}selected{% endif %}>Wartung</option>
+        </select>
+      </div>
+
+      <div class="col-sm-9">
+        <label class="form-label mb-1">Titel</label>
+        <input class="form-control form-control-sm" name="title" value="{{ ann.title if ann else '' }}" maxlength="120" />
+      </div>
+
+      <div class="col-12">
+        <label class="form-label mb-1">Text</label>
+        <textarea class="form-control form-control-sm" name="body" rows="5" maxlength="1200">{{ ann.body if ann else '' }}</textarea>
+        <div class="text-muted small mt-1">Wird auf der Startseite angezeigt. Keine personenbezogenen Daten.</div>
+      </div>
+
+      <div class="col-12 mt-2">
+        <button class="btn btn-brand" type="submit">Speichern</button>
+        <a class="btn btn-outline-secondary" href="/">Startseite ansehen</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% if ann %}
+  <div class="text-muted small mt-2">Letztes Update: <span class="mono">{{ ann.updated_at }}</span></div>
+{% endif %}
+
+{% endblock %}

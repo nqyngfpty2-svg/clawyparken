@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 class="h5">Admin</h2>
+
+{% if error %}
+  <div class="alert alert-danger">{{ error }}</div>
+{% endif %}
+
+<div class="card">
+  <div class="card-body">
+    <form method="post" action="/admin" class="row g-2 align-items-end">
+      <div class="col-sm-6">
+        <label class="form-label mb-1">Admin-Code</label>
+        <input class="form-control form-control-sm mono" name="code" required />
+      </div>
+      <div class="col-sm-3">
+        <button class="btn btn-brand btn-sm w-100" type="submit">Öffnen</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

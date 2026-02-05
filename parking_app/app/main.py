@@ -12,11 +12,14 @@ from fastapi.templating import Jinja2Templates
 from .db import connect, migrate
 from .owners import ensure_owner_codes
 from .plan_labels import ensure_admin_token, load_labels, save_labels, render_annotated, PLAN_IMAGE
+from .admin_announce import ensure_admin_code, load_announcement, save_announcement
 # anonym mode: no outbound email
 
 app = FastAPI(title="Parkplatz-Share")
 
 BASE_DIR = __import__("pathlib").Path(__file__).resolve().parents[1]
+SECRETS_DIR = BASE_DIR / "secrets"
+DATA_DIR = BASE_DIR / "data"
 TEMPLATES = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 TEMPLATES.env.globals["year"] = datetime.utcnow().year
 
@@ -64,11 +67,46 @@ def init_spots() -> None:
 def _startup() -> None:
     migrate()
     init_spots()
+    # ensure admin code exists (stored locally; not in repo)
+    ensure_admin_code(SECRETS_DIR)
 
 
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request):
-    return TEMPLATES.TemplateResponse("home.html", {"request": request})
+    ann = load_announcement(DATA_DIR)
+    return TEMPLATES.TemplateResponse("home.html", {"request": request, "ann": ann})
+
+
+@app.get("/admin", response_class=HTMLResponse)
+def admin_login(request: Request):
+    return TEMPLATES.TemplateResponse("admin_login.html", {"request": request})
+
+
+@app.post("/admin", response_class=HTMLResponse)
+def admin_portal(request: Request, code: str = Form(...)):
+    code = (code or "").strip()
+    real = ensure_admin_code(SECRETS_DIR)
+    if code != real:
+        return TEMPLATES.TemplateResponse("admin_login.html", {"request": request, "error": "Code falsch."}, status_code=401)
+
+    ann = load_announcement(DATA_DIR)
+    if ann is None:
+        ann = {"enabled": False, "level": "info", "title": "", "body": "", "updated_at": ""}
+    return TEMPLATES.TemplateResponse("admin.html", {"request": request, "code": code, "ann": ann})
+
+
+@app.post("/admin/save", response_class=HTMLResponse)
+def admin_save(request: Request, code: str = Form(...), enabled: Optional[str] = Form(None), level: str = Form("info"), title: str = Form(""), body: str = Form("")):
+    code = (code or "").strip()
+    real = ensure_admin_code(SECRETS_DIR)
+    if code != real:
+        return PlainTextResponse("forbidden", status_code=403)
+
+    save_announcement(DATA_DIR, title=title, body=body, level=level, enabled=bool(enabled))
+    ann = load_announcement(DATA_DIR)
+    if ann is None:
+        ann = {"enabled": False, "level": level, "title": title, "body": body, "updated_at": ""}
+    return TEMPLATES.TemplateResponse("admin.html", {"request": request, "code": code, "ann": ann, "saved": True})
 
 
 @app.get("/series", response_class=HTMLResponse)
