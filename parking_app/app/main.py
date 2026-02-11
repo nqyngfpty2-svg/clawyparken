@@ -423,6 +423,10 @@ def plan_reset(k: str = ""):
 @app.get("/day/{day}", response_class=HTMLResponse)
 def day_view(request: Request, day: str):
     # list offered spots + booking status
+    day_dt = parse_day(day)
+    prev_day = (day_dt - timedelta(days=1)).strftime("%Y-%m-%d")
+    next_day = (day_dt + timedelta(days=1)).strftime("%Y-%m-%d")
+
     with connect() as con:
         offers = con.execute(
             """
@@ -440,7 +444,15 @@ def day_view(request: Request, day: str):
         ).fetchall()
     return TEMPLATES.TemplateResponse(
         "day.html",
-        {"request": request, "day": day, "offers": offers, "maxAhead": MAX_BOOK_AHEAD_DAYS, "year": datetime.utcnow().year},
+        {
+            "request": request,
+            "day": day,
+            "offers": offers,
+            "prev_day": prev_day,
+            "next_day": next_day,
+            "maxAhead": MAX_BOOK_AHEAD_DAYS,
+            "year": datetime.utcnow().year,
+        },
     )
 
 
