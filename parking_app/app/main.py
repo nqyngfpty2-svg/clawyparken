@@ -3,6 +3,7 @@ from __future__ import annotations
 import secrets
 from datetime import datetime, timedelta, date
 from typing import Optional
+from zoneinfo import ZoneInfo
 
 from fastapi import FastAPI, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, PlainTextResponse, FileResponse, JSONResponse
@@ -73,8 +74,9 @@ def _startup() -> None:
 
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request):
-    ann = load_announcement(DATA_DIR)
-    return TEMPLATES.TemplateResponse("home.html", {"request": request, "ann": ann})
+    # Root should always open the current Berlin day view directly.
+    today_berlin = datetime.now(ZoneInfo("Europe/Berlin")).strftime("%Y-%m-%d")
+    return RedirectResponse(url=f"/day/{today_berlin}", status_code=303)
 
 
 @app.get("/admin", response_class=HTMLResponse)
