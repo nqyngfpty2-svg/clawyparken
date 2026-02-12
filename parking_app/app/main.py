@@ -40,6 +40,11 @@ def parse_day(s: str) -> date:
     return date(y, m, d)
 
 
+def normalize_lot(lot: Optional[str]) -> str:
+    lot = (lot or "bank").strip().lower()
+    return lot if lot in {"bank", "post"} else "bank"
+
+
 def berlin_day_list(start_day: str, days: int) -> list[str]:
     dt = parse_day(start_day)
     return [(dt + timedelta(days=i)).strftime("%Y-%m-%d") for i in range(days)]
@@ -54,13 +59,16 @@ def daterange(start: date, end: date):
 
 
 def init_spots() -> None:
-    mapping = ensure_owner_codes()  # P01->CODE
+    mapping = ensure_owner_codes()  # P01..P60 and PP01..PP60 -> CODE
     with connect() as con:
         for spot, code in mapping.items():
+            lot = "post" if spot.startswith("PP") else "bank"
             con.execute(
-                "INSERT OR IGNORE INTO spots(name, owner_code) VALUES(?, ?)",
-                (spot, code),
+                "INSERT OR IGNORE INTO spots(name, owner_code, lot) VALUES(?, ?, ?)",
+                (spot, code, lot),
             )
+            # Keep existing rows consistent if they already existed.
+            con.execute("UPDATE spots SET lot=? WHERE name=?", (lot, spot))
         con.commit()
 
 
@@ -73,10 +81,11 @@ def _startup() -> None:
 
 
 @app.get("/", response_class=HTMLResponse)
-def home(request: Request):
+def home(request: Request, lot: str = "bank"):
     # Root should always open the current Berlin day view directly.
     today_berlin = datetime.now(ZoneInfo("Europe/Berlin")).strftime("%Y-%m-%d")
-    return RedirectResponse(url=f"/day/{today_berlin}", status_code=303)
+    lot = normalize_lot(lot)
+    return RedirectResponse(url=f"/day/{today_berlin}?lot={lot}", status_code=303)
 
 
 @app.get("/admin", response_class=HTMLResponse)
@@ -421,11 +430,12 @@ def plan_reset(k: str = ""):
 
 
 @app.get("/day/{day}", response_class=HTMLResponse)
-def day_view(request: Request, day: str):
+def day_view(request: Request, day: str, lot: str = "bank"):
     # list offered spots + booking status
     day_dt = parse_day(day)
     prev_day = (day_dt - timedelta(days=1)).strftime("%Y-%m-%d")
     next_day = (day_dt + timedelta(days=1)).strftime("%Y-%m-%d")
+    lot = normalize_lot(lot)
 
     with connect() as con:
         offers = con.execute(
@@ -437,16 +447,21 @@ def day_view(request: Request, day: str):
             FROM offers o
             JOIN spots s ON s.id=o.spot_id
             LEFT JOIN bookings b ON b.spot_id=o.spot_id AND b.day=o.day
-            WHERE o.day=?
+            WHERE o.day=? AND s.lot=?
             ORDER BY s.name
             """,
-            (day,),
+            (day, lot),
         ).fetchall()
+
+    lot_title = "Bankparkplatz" if lot == "bank" else "Postparkplatz"
+
     return TEMPLATES.TemplateResponse(
         "day.html",
         {
             "request": request,
             "day": day,
+            "lot": lot,
+            "lot_title": lot_title,
             "offers": offers,
             "prev_day": prev_day,
             "next_day": next_day,
@@ -461,10 +476,12 @@ def book(
     request: Request,
     day: str = Form(...),
     spot: str = Form(...),
+    lot: str = Form("bank"),
 ):
     token = secrets.token_urlsafe(24)
+    lot = normalize_lot(lot)
     with connect() as con:
-        row = con.execute("SELECT id FROM spots WHERE name=?", (spot,)).fetchone()
+        row = con.execute("SELECT id FROM spots WHERE name=? AND lot=?", (spot, lot)).fetchone()
         if not row:
             return PlainTextResponse("Unbekannter Parkplatz", status_code=400)
         spot_id = row["id"]
