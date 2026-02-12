@@ -20,7 +20,7 @@
     <div class="card-header" style="background: linear-gradient(90deg, #0B6B3A, #0A5F34); color:#fff;" >
       <div class="d-flex justify-content-between align-items-center">
         <div><strong>Parkplatzplan</strong> <span class="opacity-75 small">(nummeriert)</span></div>
-        <a href="{% if lot == 'post' %}/static/Plan_Postparkplatz.png{% else %}/plan/annotated.png{% endif %}" target="_blank" class="text-white small">In neuem Tab öffnen</a>
+        <a href="{% if lot == 'post' %}/plan/post.png{% else %}/plan/annotated.png{% endif %}" target="_blank" class="text-white small">In neuem Tab öffnen</a>
       </div>
     </div>
     <div class="card-body">
@@ -32,7 +32,7 @@
       </div>
 
       <div id="planWrap" style="overflow:auto; border:1px solid #e5e7eb; border-radius:8px; max-height: 70vh; background: #fafafa;">
-        <img id="planImg" src="{% if lot == 'post' %}/static/Plan_Postparkplatz.png?v={{ day }}{% else %}/plan/annotated.png?v={{ day }}{% endif %}" alt="Parkplatzplan" style="transform-origin: 0 0; display:block;" />
+        <img id="planImg" src="{% if lot == 'post' %}/plan/post.png?v={{ day }}{% else %}/plan/annotated.png?v={{ day }}{% endif %}" alt="Parkplatzplan" style="transform-origin: 0 0; display:block;" />
       </div>
 
       <div class="text-muted small mt-2">Tipp: Mit Strg+Mausrad kannst du zusätzlich browserweit zoomen. Hier kannst du aber auch unabhängig rein/raus zoomen.</div>

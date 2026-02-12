@@ -377,6 +377,27 @@ def plan_annotated():
     return FileResponse(str(out), media_type="image/png")
 
 
+def _resolve_post_plan() -> Optional[str]:
+    candidates = [
+        BASE_DIR / "plan" / "Plan_Postparkplatz.png",
+        BASE_DIR / "Plan" / "Plan_Postparkplatz.png",
+        BASE_DIR / "static" / "Plan_Postparkplatz.png",
+        BASE_DIR / "Plan_Postparkplatz.png",
+    ]
+    for p in candidates:
+        if p.exists():
+            return str(p)
+    return None
+
+
+@app.get("/plan/post.png")
+def plan_post():
+    p = _resolve_post_plan()
+    if not p:
+        return PlainTextResponse("Postparkplatz-Plan nicht gefunden.", status_code=404)
+    return FileResponse(p, media_type="image/png")
+
+
 @app.get("/plan/labeler", response_class=HTMLResponse)
 def plan_labeler(request: Request, k: str = ""):
     token = ensure_admin_token()
