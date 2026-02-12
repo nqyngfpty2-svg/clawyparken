@@ -1,13 +1,11 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
-  <h2 class="h5 mb-0">{{ lot_title }} · Tag: <span class="mono">{{ day }}</span></h2>
+  <h2 class="h5 mb-0">Tag: <span class="mono">{{ day }}</span></h2>
   <div class="d-flex flex-wrap gap-2 align-items-center">
-    <a class="btn btn-outline-secondary btn-sm" href="/day/{{ prev_day }}?lot={{ lot }}">◀ Vortag</a>
-    <a class="btn btn-outline-secondary btn-sm" href="/day/{{ next_day }}?lot={{ lot }}">Nächster Tag ▶</a>
-    <a class="btn btn-outline-dark btn-sm {% if lot == 'bank' %}active{% endif %}" href="/day/{{ day }}?lot=bank">Bankparkplatz</a>
-    <a class="btn btn-outline-dark btn-sm {% if lot == 'post' %}active{% endif %}" href="/day/{{ day }}?lot=post">Postparkplatz</a>
-    <form class="d-flex gap-2 align-items-center" method="get" action="/day/{{ day }}" onsubmit="event.preventDefault(); const v=this.querySelector('input[name=goto_day]').value; if(v){ window.location='/day/'+v+'?lot={{ lot }}'; }">
+    <a class="btn btn-outline-secondary btn-sm" href="/day/{{ prev_day }}">◀ Vortag</a>
+    <a class="btn btn-outline-secondary btn-sm" href="/day/{{ next_day }}">Nächster Tag ▶</a>
+    <form class="d-flex gap-2 align-items-center" method="get" action="/day/{{ day }}" onsubmit="event.preventDefault(); const v=this.querySelector('input[name=goto_day]').value; if(v){ window.location='/day/'+v; }">
       <input type="date" name="goto_day" class="form-control form-control-sm" value="{{ day }}" />
       <button class="btn btn-outline-primary btn-sm" type="submit">Gehe zu Tag</button>
     </form>
@@ -20,7 +18,7 @@
     <div class="card-header" style="background: linear-gradient(90deg, #0B6B3A, #0A5F34); color:#fff;" >
       <div class="d-flex justify-content-between align-items-center">
         <div><strong>Parkplatzplan</strong> <span class="opacity-75 small">(nummeriert)</span></div>
-        <a href="{% if lot == 'post' %}/static/Plan_Postparkplatz.png{% else %}/plan/annotated.png{% endif %}" target="_blank" class="text-white small">In neuem Tab öffnen</a>
+        <a href="/plan/annotated.png" target="_blank" class="text-white small">In neuem Tab öffnen</a>
       </div>
     </div>
     <div class="card-body">
@@ -32,7 +30,7 @@
       </div>
 
       <div id="planWrap" style="overflow:auto; border:1px solid #e5e7eb; border-radius:8px; max-height: 70vh; background: #fafafa;">
-        <img id="planImg" src="{% if lot == 'post' %}/static/Plan_Postparkplatz.png?v={{ day }}{% else %}/plan/annotated.png?v={{ day }}{% endif %}" alt="Parkplatzplan" style="transform-origin: 0 0; display:block;" />
+        <img id="planImg" src="/plan/annotated.png?v={{ day }}" alt="Parkplatzplan" style="transform-origin: 0 0; display:block;" />
       </div>
 
       <div class="text-muted small mt-2">Tipp: Mit Strg+Mausrad kannst du zusätzlich browserweit zoomen. Hier kannst du aber auch unabhängig rein/raus zoomen.</div>
@@ -75,7 +73,7 @@ window.addEventListener('load', _planApply);
       <tbody>
       {% for o in offers %}
         <tr>
-          <td class="mono">{% if lot == 'post' and o.spot.startswith('PP') %}P{{ o.spot[2:] }}{% else %}{{ o.spot }}{% endif %}</td>
+          <td class="mono">{{ o.spot }}</td>
           <td>
             {% if o.booking_status == 'active' %}
               <span class="badge text-bg-secondary">gebucht</span>
@@ -90,7 +88,6 @@ window.addEventListener('load', _planApply);
               <form class="row g-2" method="post" action="/book">
                 <input type="hidden" name="day" value="{{ day }}" />
                 <input type="hidden" name="spot" value="{{ o.spot }}" />
-                <input type="hidden" name="lot" value="{{ lot }}" />
                 <div class="col-sm-8">
                   <span class="text-muted small">Anonym: Nach dem Buchen bekommst du einen Buchungscode.</span>
                 </div>
@@ -108,6 +105,6 @@ window.addEventListener('load', _planApply);
 {% endif %}
 
 <div class="mt-3">
-  <a class="btn btn-outline-secondary btn-sm" href="/?lot={{ lot }}">Heute</a>
+  <a class="btn btn-outline-secondary btn-sm" href="/">Heute</a>
 </div>
 {% endblock %}
