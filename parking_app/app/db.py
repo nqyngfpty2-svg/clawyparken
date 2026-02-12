@@ -51,7 +51,6 @@ def migrate() -> None:
             CREATE INDEX IF NOT EXISTS idx_offers_day ON offers(day);
             CREATE INDEX IF NOT EXISTS idx_bookings_day ON bookings(day);
             CREATE INDEX IF NOT EXISTS idx_bookings_email ON bookings(booker_email);
-            CREATE INDEX IF NOT EXISTS idx_spots_lot ON spots(lot);
             """
         )
 
@@ -59,5 +58,8 @@ def migrate() -> None:
         cols = [r[1] for r in con.execute("PRAGMA table_info(spots)").fetchall()]
         if "lot" not in cols:
             con.execute("ALTER TABLE spots ADD COLUMN lot TEXT NOT NULL DEFAULT 'bank'")
-            con.execute("UPDATE spots SET lot='bank' WHERE lot IS NULL OR lot=''")
-            con.commit()
+
+        # Ensure lot is populated and index exists (safe on new + existing installs).
+        con.execute("UPDATE spots SET lot='bank' WHERE lot IS NULL OR lot=''")
+        con.execute("CREATE INDEX IF NOT EXISTS idx_spots_lot ON spots(lot)")
+        con.commit()
