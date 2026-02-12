@@ -11,7 +11,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from .db import connect, migrate
-from .owners import ensure_owner_codes
+from .owners import ensure_owner_codes, is_post_spot
 from .plan_labels import ensure_admin_token, load_labels, save_labels, render_annotated, PLAN_IMAGE
 from .admin_announce import ensure_admin_code, load_announcement, save_announcement
 # anonym mode: no outbound email
@@ -62,7 +62,7 @@ def init_spots() -> None:
     mapping = ensure_owner_codes()  # P01..P60 and PP01..PP60 -> CODE
     with connect() as con:
         for spot, code in mapping.items():
-            lot = "post" if spot.startswith("PP") else "bank"
+            lot = "post" if is_post_spot(spot) else "bank"
             con.execute(
                 "INSERT OR IGNORE INTO spots(name, owner_code, lot) VALUES(?, ?, ?)",
                 (spot, code, lot),

@@ -88,7 +88,7 @@ window.addEventListener('load', _planApply);
       <tbody>
       {% for o in offers %}
         <tr>
-          <td class="mono">{% if lot == 'post' and o.spot.startswith('PP') %}P{{ o.spot[2:] }}{% elif lot == 'bank' and o.spot.startswith('P') %}BP{{ o.spot[1:] }}{% else %}{{ o.spot }}{% endif %}</td>
+          <td class="mono">{% if lot == 'post' and o.spot.startswith('PP::') %}{{ o.spot[4:] }}{% elif lot == 'post' and o.spot.startswith('PP') %}P{{ o.spot[2:] }}{% elif lot == 'bank' and o.spot.startswith('P') %}BP{{ o.spot[1:] }}{% else %}{{ o.spot }}{% endif %}</td>
           <td>
             {% if o.booking_status == 'active' %}
               <span class="badge text-bg-secondary">gebucht</span>
