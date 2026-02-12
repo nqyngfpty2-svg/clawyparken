@@ -5,14 +5,26 @@
   <div class="d-flex flex-wrap gap-2 align-items-center">
     <a class="btn btn-outline-secondary btn-sm" href="/day/{{ prev_day }}?lot={{ lot }}">◀ Vortag</a>
     <a class="btn btn-outline-secondary btn-sm" href="/day/{{ next_day }}?lot={{ lot }}">Nächster Tag ▶</a>
-    <a class="btn btn-outline-dark btn-sm {% if lot == 'bank' %}active{% endif %}" href="/day/{{ day }}?lot=bank">Bankparkplatz</a>
-    <a class="btn btn-outline-dark btn-sm {% if lot == 'post' %}active{% endif %}" href="/day/{{ day }}?lot=post">Postparkplatz</a>
+    <a class="btn btn-outline-dark btn-sm {% if lot == 'bank' %}lot-btn-bank-active{% endif %}" href="/day/{{ day }}?lot=bank">Bankparkplatz</a>
+    <a class="btn btn-outline-dark btn-sm {% if lot == 'post' %}lot-btn-post-active{% endif %}" href="/day/{{ day }}?lot=post">Postparkplatz</a>
     <form class="d-flex gap-2 align-items-center" method="get" action="/day/{{ day }}" onsubmit="event.preventDefault(); const v=this.querySelector('input[name=goto_day]').value; if(v){ window.location='/day/'+v+'?lot={{ lot }}'; }">
       <input type="date" name="goto_day" class="form-control form-control-sm" value="{{ day }}" />
       <button class="btn btn-outline-primary btn-sm" type="submit">Gehe zu Tag</button>
     </form>
     <button class="btn btn-brand btn-sm blink-soft" type="button" data-bs-toggle="collapse" data-bs-target="#plan" aria-expanded="false" aria-controls="plan">Parkplatzplan</button>
   </div>
+</div>
+
+<div class="mt-2">
+  {% if lot == 'bank' %}
+    <div class="alert alert-primary py-2 mb-2 small">
+      Hinweis: Dies ist der offizielle Parkplatz des Bankgebäudes.
+    </div>
+  {% else %}
+    <div class="alert alert-warning py-2 mb-2 small">
+      Hinweis: Dies ist der Parkplatz hinter dem offiziellen Bankgelände.
+    </div>
+  {% endif %}
 </div>
 
 <div class="collapse mt-3" id="plan">
