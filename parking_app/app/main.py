@@ -28,7 +28,7 @@ app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="stat
 
 # Booking/offer horizon. Previously 90 days; intentionally generous so owners can plan far ahead.
 MAX_BOOK_AHEAD_DAYS = 3650  # ~10 years
-OWNER_WITHDRAW_MIN_DAYS = 1  # owner must withdraw at least 1 day before
+OWNER_WITHDRAW_CUTOFF_HOUR = 12  # owner may cancel booked spots until 12:00 on previous day (Europe/Berlin)
 
 
 def now_iso() -> str:
@@ -56,6 +56,24 @@ def daterange(start: date, end: date):
     while cur <= end:
         yield cur
         cur = cur + timedelta(days=1)
+
+
+def owner_cancel_allowed(day_str: str) -> bool:
+    """Owner may cancel a booked spot until 12:00 on the previous day (Berlin time)."""
+    try:
+        target = parse_day(day_str)
+    except Exception:
+        return False
+    cutoff_dt = datetime(
+        target.year,
+        target.month,
+        target.day,
+        OWNER_WITHDRAW_CUTOFF_HOUR,
+        0,
+        0,
+        tzinfo=ZoneInfo("Europe/Berlin"),
+    ) - timedelta(days=1)
+    return datetime.now(ZoneInfo("Europe/Berlin")) <= cutoff_dt
 
 
 def init_spots() -> None:
@@ -824,7 +842,6 @@ def owner_withdraw_series(
             if d.weekday() not in allowed_wd:
                 continue
             day = d.strftime("%Y-%m-%d")
-            # enforce: at least 1 day before
             if day <= today.strftime("%Y-%m-%d"):
                 continue
             con.execute("DELETE FROM offers WHERE spot_id=? AND day=?", (spot["id"], day))
@@ -833,6 +850,8 @@ def owner_withdraw_series(
                 (spot["id"], day),
             ).fetchone()
             if b and b["status"] == "active":
+                if not owner_cancel_allowed(day):
+                    continue
                 con.execute(
                     "UPDATE bookings SET status='cancelled_by_owner', cancelled_at=?, cancel_reason=? WHERE id=?",
                     (now_iso(), (reason.strip() or "Owner hat die Serie zurückgezogen")[:200], b["id"]),
@@ -856,15 +875,17 @@ def owner_withdraw_all(code: str = Form(...), reason: str = Form(""), p: int = F
         if not spot:
             return PlainTextResponse("Code unbekannt", status_code=401)
 
-        # Cancel active future bookings first
-        con.execute(
-            """
-            UPDATE bookings
-            SET status='cancelled_by_owner', cancelled_at=?, cancel_reason=?
-            WHERE spot_id=? AND day>? AND status='active'
-            """,
-            (now_iso(), (reason.strip() or "Owner hat alle Freigaben zurückgezogen")[:200], spot["id"], today),
-        )
+        # Cancel only active bookings still within allowed owner-cancel window.
+        active = con.execute(
+            "SELECT id, day FROM bookings WHERE spot_id=? AND day>? AND status='active'",
+            (spot["id"], today),
+        ).fetchall()
+        for b in active:
+            if owner_cancel_allowed(b["day"]):
+                con.execute(
+                    "UPDATE bookings SET status='cancelled_by_owner', cancelled_at=?, cancel_reason=? WHERE id=?",
+                    (now_iso(), (reason.strip() or "Owner hat alle Freigaben zurückgezogen")[:200], b["id"]),
+                )
 
         # Delete future offers
         con.execute(
@@ -884,11 +905,7 @@ def owner_withdraw(request: Request, code: str = Form(...), day: str = Form(...)
         if not spot:
             return PlainTextResponse("Code unbekannt", status_code=401)
 
-        # enforce: at least 1 day before
-        # (simple compare strings by date)
         today = datetime.now().strftime("%Y-%m-%d")
-        if day <= today:
-            return PlainTextResponse("Zu spät: Rückzug nur mindestens 1 Tag vorher.", status_code=400)
 
         con.execute("DELETE FROM offers WHERE spot_id=? AND day=?", (spot["id"], day))
         b = con.execute(
@@ -896,10 +913,17 @@ def owner_withdraw(request: Request, code: str = Form(...), day: str = Form(...)
             (spot["id"], day),
         ).fetchone()
         if b and b["status"] == "active":
+            if not owner_cancel_allowed(day):
+                return PlainTextResponse(
+                    "Zu spät: Storno nur bis 12:00 Uhr am Vortag möglich.",
+                    status_code=400,
+                )
             con.execute(
                 "UPDATE bookings SET status='cancelled_by_owner', cancelled_at=?, cancel_reason=? WHERE id=?",
                 (now_iso(), (reason.strip() or "Owner hat das Angebot zurückgezogen")[:200], b["id"]),
             )
+        elif day <= today:
+            return PlainTextResponse("Zu spät: Rückzug für heute nicht mehr möglich.", status_code=400)
         con.commit()
 
     # No e-mail notifications in anonym mode.
