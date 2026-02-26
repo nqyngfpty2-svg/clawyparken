@@ -622,11 +622,14 @@ def owner_portal_get(request: Request, code: str, p: int = 0):
 
         days = berlin_day_list(start_s, n_days)
         rows = []
+        weekday_labels = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"]
         for day in days:
             off = con.execute("SELECT 1 FROM offers WHERE spot_id=? AND day=?", (spot["id"], day)).fetchone()
             bk = con.execute("SELECT status, booker_email FROM bookings WHERE spot_id=? AND day=?", (spot["id"], day)).fetchone()
+            d_obj = datetime.strptime(day, "%Y-%m-%d").date()
             rows.append({
                 "day": day,
+                "weekday": weekday_labels[d_obj.weekday()],
                 "offered": bool(off),
                 "booking_status": (bk["status"] if bk else None),
                 "booker_email": (bk["booker_email"] if bk else None),

@@ -114,7 +114,7 @@
     <tbody>
       {% for r in rows %}
       <tr>
-        <td class="mono">{{ r.day }}</td>
+        <td class="mono">{{ r.day }}, {{ r.weekday }}</td>
         <td>
           {% if r.offered %}
             <span class="badge text-bg-success">ja</span>
