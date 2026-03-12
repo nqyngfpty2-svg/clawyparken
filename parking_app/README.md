@@ -17,13 +17,9 @@ Dann im Browser: http://127.0.0.1:18880
 - Owner-Codes: `parking_app/secrets/owners.json` (chmod 600)
 
 ## E-Mail
-Versand ist **STRATO-first** über:
-`email/strato_send.py`
+Versand in diesem Projekt läuft **ausschließlich lokal via `sendmail`** (Plesk-kompatibel).
 
-Falls das Hosting (z. B. Plesk) SMTP ausgehend blockiert und nur lokalen Mailversand erlaubt,
-fällt die App automatisch auf `sendmail` zurück.
-
-Optionaler Absender für Sendmail:
+Optionaler Absender:
 - Env-Var: `PARKING_MAIL_FROM` (Default: `noreply@localhost`)
 
 ## Nächste Schritte
