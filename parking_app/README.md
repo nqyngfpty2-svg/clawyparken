@@ -44,6 +44,7 @@ ssl=false
   - Standard: nach **90 Tagen**
   - konfigurierbar über `PARKING_PRIVACY_RETENTION_DAYS`
 - Bei Anonymisierung werden für alte Buchungen folgende Felder geleert: `booker_email`, `manage_token`, `cancel_reason`.
+- Eine technische Kurzinfo ist unter `/privacy` verfügbar (für volle DSGVO-Infos um Betreiberangaben ergänzen).
 
 ## Nächste Schritte
 - systemd service + nginx + HTTPS (nur nach Toby-Freigabe)

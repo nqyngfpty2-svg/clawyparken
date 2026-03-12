@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 class="h5">Datenschutzhinweise (Kurzfassung)</h2>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <p class="mb-2"><strong>Zweck:</strong> Das Portal verarbeitet Daten nur zur Parkplatz-Buchung, Verwaltung und Benachrichtigung bei Änderungen/Stornos.</p>
+    <ul class="mb-0">
+      <li>Pflichtdaten bei Buchung: Parkplatz/Tag/Status (Buchungsdatensatz)</li>
+      <li>Optional: private E-Mail-Adresse für Bestätigung und Änderungsinfos</li>
+      <li>Owner-Codes dienen nur der Berechtigung zum Anbieten/Zurückziehen</li>
+    </ul>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <h3 class="h6">Speicherdauer</h3>
+    <p class="mb-0">
+      Personenbezogene Buchungsdaten werden automatisch anonymisiert.
+      Standardmäßig nach <strong>90 Tagen</strong> (konfigurierbar über <code>PARKING_PRIVACY_RETENTION_DAYS</code>).
+      Dabei werden <code>booker_email</code>, <code>manage_token</code> und <code>cancel_reason</code> entfernt.
+    </p>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <h3 class="h6">Hinweis</h3>
+    <p class="mb-0">Diese Seite ist eine technische Kurzinfo der Anwendung. Organisatorische Angaben (z. B. Verantwortlicher/Kontakt) müssen durch den Betreiber ergänzt werden.</p>
+  </div>
+</div>
+{% endblock %}

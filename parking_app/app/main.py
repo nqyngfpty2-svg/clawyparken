@@ -164,6 +164,11 @@ def home(request: Request, lot: str = "bank"):
     return RedirectResponse(url=f"/day/{today_berlin}?lot={lot}", status_code=303)
 
 
+@app.get("/privacy", response_class=HTMLResponse)
+def privacy_info(request: Request):
+    return TEMPLATES.TemplateResponse("privacy.html", {"request": request, "year": datetime.utcnow().year})
+
+
 @app.get("/admin", response_class=HTMLResponse)
 def admin_login(request: Request):
     return TEMPLATES.TemplateResponse("admin_login.html", {"request": request})
@@ -701,14 +706,13 @@ def owner_portal_get(request: Request, code: str, p: int = 0):
         weekday_labels = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"]
         for day in days:
             off = con.execute("SELECT 1 FROM offers WHERE spot_id=? AND day=?", (spot["id"], day)).fetchone()
-            bk = con.execute("SELECT status, booker_email FROM bookings WHERE spot_id=? AND day=?", (spot["id"], day)).fetchone()
+            bk = con.execute("SELECT status FROM bookings WHERE spot_id=? AND day=?", (spot["id"], day)).fetchone()
             d_obj = datetime.strptime(day, "%Y-%m-%d").date()
             rows.append({
                 "day": day,
                 "weekday": weekday_labels[d_obj.weekday()],
                 "offered": bool(off),
                 "booking_status": (bk["status"] if bk else None),
-                "booker_email": (bk["booker_email"] if bk else None),
             })
 
     page_start = days[0] if days else start_s
