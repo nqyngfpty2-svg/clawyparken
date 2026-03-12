@@ -55,6 +55,26 @@ def normalize_private_email(value: Optional[str]) -> str:
     return v[:254]
 
 
+def send_booking_confirm_email_if_opted(recipient: str, spot_name: str, day: str, manage_token: str) -> None:
+    recipient = normalize_private_email(recipient)
+    if not recipient:
+        return
+    subject = f"Clawyparken: Reservierung {day} bestätigt"
+    body = (
+        "Hallo,\n\n"
+        "deine Reservierung wurde erfolgreich angelegt.\n\n"
+        f"Parkplatz: {spot_name}\n"
+        f"Datum: {day}\n"
+        f"Buchungscode: {manage_token}\n\n"
+        "Du erhältst diese E-Mail, weil du beim Buchen optional eine private Adresse für Bestätigung und Änderungen hinterlegt hast.\n"
+    )
+    try:
+        send_email(recipient, subject, body)
+    except Exception:
+        # Benachrichtigung darf den Buchungs-Flow nicht blockieren.
+        pass
+
+
 def send_owner_cancel_email_if_opted(recipient: str, spot_name: str, day: str, reason: str) -> None:
     recipient = normalize_private_email(recipient)
     if not recipient:
@@ -66,7 +86,7 @@ def send_owner_cancel_email_if_opted(recipient: str, spot_name: str, day: str, r
         f"Parkplatz: {spot_name}\n"
         f"Datum: {day}\n"
         f"Grund: {reason or 'nicht angegeben'}\n\n"
-        "Du erhältst diese E-Mail, weil du beim Buchen optional eine private Adresse für Änderungen hinterlegt hast.\n"
+        "Du erhältst diese E-Mail, weil du beim Buchen optional eine private Adresse für Bestätigung und Änderungen hinterlegt hast.\n"
     )
     try:
         send_email(recipient, subject, body)
@@ -582,6 +602,8 @@ def book(
             (spot_id, day, private_email, "active", now_iso(), token),
         )
         con.commit()
+
+    send_booking_confirm_email_if_opted(private_email, spot, day, token)
 
     # Buchungscode direkt anzeigen (E-Mail-Benachrichtigung ist optional)
     return RedirectResponse(url=f"/manage/{token}", status_code=303)
