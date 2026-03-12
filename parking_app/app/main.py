@@ -4,7 +4,6 @@ import secrets
 from datetime import datetime, timedelta, date
 from typing import Optional
 from zoneinfo import ZoneInfo
-import logging
 
 from fastapi import FastAPI, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, PlainTextResponse, FileResponse, JSONResponse
@@ -18,7 +17,6 @@ from .admin_announce import ensure_admin_code, load_announcement, save_announcem
 from .emailer import send_email
 
 app = FastAPI(title="Parkplatz-Share")
-logger = logging.getLogger("parking_app.mail")
 
 BASE_DIR = __import__("pathlib").Path(__file__).resolve().parents[1]
 SECRETS_DIR = BASE_DIR / "secrets"
@@ -57,7 +55,7 @@ def normalize_private_email(value: Optional[str]) -> str:
     return v[:254]
 
 
-def send_booking_confirm_email_if_opted(recipient: str, spot_name: str, day: str, manage_token: str, manage_link: str) -> None:
+def send_booking_confirm_email_if_opted(recipient: str, spot_name: str, day: str, manage_token: str) -> None:
     recipient = normalize_private_email(recipient)
     if not recipient:
         return
@@ -67,16 +65,14 @@ def send_booking_confirm_email_if_opted(recipient: str, spot_name: str, day: str
         "deine Reservierung wurde erfolgreich angelegt.\n\n"
         f"Parkplatz: {spot_name}\n"
         f"Datum: {day}\n"
-        f"Buchungscode: {manage_token}\n"
-        f"Buchung verwalten/stornieren: {manage_link}\n\n"
+        f"Buchungscode: {manage_token}\n\n"
         "Du erhältst diese E-Mail, weil du beim Buchen optional eine private Adresse für Bestätigung und Änderungen hinterlegt hast.\n"
     )
     try:
         send_email(recipient, subject, body)
-    except Exception as exc:
-        # Benachrichtigung darf den Buchungs-Flow nicht blockieren,
-        # aber der Fehler muss sichtbar in den Logs sein.
-        logger.exception("Booking-Bestätigungsmail fehlgeschlagen an %s: %s", recipient, exc)
+    except Exception:
+        # Benachrichtigung darf den Buchungs-Flow nicht blockieren.
+        pass
 
 
 def send_owner_cancel_email_if_opted(recipient: str, spot_name: str, day: str, reason: str) -> None:
@@ -94,10 +90,9 @@ def send_owner_cancel_email_if_opted(recipient: str, spot_name: str, day: str, r
     )
     try:
         send_email(recipient, subject, body)
-    except Exception as exc:
-        # Benachrichtigung darf den Storno-Flow nicht blockieren,
-        # aber der Fehler muss sichtbar in den Logs sein.
-        logger.exception("Owner-Storno-Mail fehlgeschlagen an %s: %s", recipient, exc)
+    except Exception:
+        # Benachrichtigung darf den Storno-Flow nicht blockieren.
+        pass
 
 
 def berlin_day_list(start_day: str, days: int) -> list[str]:
@@ -608,8 +603,7 @@ def book(
         )
         con.commit()
 
-    manage_link = f"{str(request.base_url).rstrip('/')}/manage/{token}"
-    send_booking_confirm_email_if_opted(private_email, spot, day, token, manage_link)
+    send_booking_confirm_email_if_opted(private_email, spot, day, token)
 
     # Buchungscode direkt anzeigen (E-Mail-Benachrichtigung ist optional)
     return RedirectResponse(url=f"/manage/{token}", status_code=303)
