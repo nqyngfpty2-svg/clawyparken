@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import os
 import sqlite3
+from datetime import date, timedelta
 from pathlib import Path
 
 DB_PATH = Path(__file__).resolve().parents[1] / "data" / "parking.sqlite3"
@@ -11,6 +13,41 @@ def connect() -> sqlite3.Connection:
     con.row_factory = sqlite3.Row
     con.execute("PRAGMA foreign_keys = ON")
     return con
+
+
+def _privacy_retention_days() -> int:
+    raw = (os.getenv("PARKING_PRIVACY_RETENTION_DAYS") or "90").strip()
+    try:
+        days = int(raw)
+    except ValueError:
+        days = 90
+    return max(1, days)
+
+
+def apply_privacy_retention(con: sqlite3.Connection) -> None:
+    """Anonymisiert alte Buchungs-PII nach konfigurierter Aufbewahrungsfrist.
+
+    Betroffen sind nur Buchungen mit day < (heute - retention_days).
+    """
+    retention_days = _privacy_retention_days()
+    cutoff = (date.today() - timedelta(days=retention_days)).strftime("%Y-%m-%d")
+
+    con.execute(
+        """
+        UPDATE bookings
+        SET
+          booker_email='',
+          manage_token='',
+          cancel_reason=NULL
+        WHERE day < ?
+          AND (
+            booker_email <> ''
+            OR manage_token <> ''
+            OR cancel_reason IS NOT NULL
+          )
+        """,
+        (cutoff,),
+    )
 
 
 def migrate() -> None:
@@ -62,4 +99,7 @@ def migrate() -> None:
         # Ensure lot is populated and index exists (safe on new + existing installs).
         con.execute("UPDATE spots SET lot='bank' WHERE lot IS NULL OR lot=''")
         con.execute("CREATE INDEX IF NOT EXISTS idx_spots_lot ON spots(lot)")
+
+        # DSGVO: alte personenbezogene Buchungsdaten anonymisieren.
+        apply_privacy_retention(con)
         con.commit()

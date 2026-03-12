@@ -38,6 +38,13 @@ starttls=true
 ssl=false
 ```
 
+## Datenschutz / Aufbewahrung
+- Private Buchungs-E-Mails werden in `bookings.booker_email` gespeichert, solange sie für den Prozess nötig sind.
+- Automatische Anonymisierung läuft beim App-Start:
+  - Standard: nach **90 Tagen**
+  - konfigurierbar über `PARKING_PRIVACY_RETENTION_DAYS`
+- Bei Anonymisierung werden für alte Buchungen folgende Felder geleert: `booker_email`, `manage_token`, `cancel_reason`.
+
 ## Nächste Schritte
 - systemd service + nginx + HTTPS (nur nach Toby-Freigabe)
 - UI polish (Kalenderansicht)
