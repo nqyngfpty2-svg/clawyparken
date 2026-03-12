@@ -4,6 +4,7 @@ import secrets
 from datetime import datetime, timedelta, date
 from typing import Optional
 from zoneinfo import ZoneInfo
+import logging
 
 from fastapi import FastAPI, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, PlainTextResponse, FileResponse, JSONResponse
@@ -17,6 +18,7 @@ from .admin_announce import ensure_admin_code, load_announcement, save_announcem
 from .emailer import send_email
 
 app = FastAPI(title="Parkplatz-Share")
+logger = logging.getLogger("parking_app.mail")
 
 BASE_DIR = __import__("pathlib").Path(__file__).resolve().parents[1]
 SECRETS_DIR = BASE_DIR / "secrets"
@@ -71,9 +73,10 @@ def send_booking_confirm_email_if_opted(recipient: str, spot_name: str, day: str
     )
     try:
         send_email(recipient, subject, body)
-    except Exception:
-        # Benachrichtigung darf den Buchungs-Flow nicht blockieren.
-        pass
+    except Exception as exc:
+        # Benachrichtigung darf den Buchungs-Flow nicht blockieren,
+        # aber der Fehler muss sichtbar in den Logs sein.
+        logger.exception("Booking-Bestätigungsmail fehlgeschlagen an %s: %s", recipient, exc)
 
 
 def send_owner_cancel_email_if_opted(recipient: str, spot_name: str, day: str, reason: str) -> None:
@@ -91,9 +94,10 @@ def send_owner_cancel_email_if_opted(recipient: str, spot_name: str, day: str, r
     )
     try:
         send_email(recipient, subject, body)
-    except Exception:
-        # Benachrichtigung darf den Storno-Flow nicht blockieren.
-        pass
+    except Exception as exc:
+        # Benachrichtigung darf den Storno-Flow nicht blockieren,
+        # aber der Fehler muss sichtbar in den Logs sein.
+        logger.exception("Owner-Storno-Mail fehlgeschlagen an %s: %s", recipient, exc)
 
 
 def berlin_day_list(start_day: str, days: int) -> list[str]:
