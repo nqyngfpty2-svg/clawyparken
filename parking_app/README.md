@@ -20,7 +20,7 @@ Dann im Browser: http://127.0.0.1:18880
 Versand in diesem Projekt läuft **ausschließlich lokal via `sendmail`** (Plesk-kompatibel).
 
 Optionaler Absender:
-- Env-Var: `PARKING_MAIL_FROM` (Default: `noreply@localhost`)
+- Env-Var: `PARKING_MAIL_FROM` (Default: `noreply@parkplatzportal.vr-365.de`)
 
 ## Nächste Schritte
 - systemd service + nginx + HTTPS (nur nach Toby-Freigabe)

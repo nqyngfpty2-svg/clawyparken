@@ -11,7 +11,7 @@ def _send_via_sendmail(to: str, subject: str, body: str) -> bool:
     if not sendmail:
         return False
 
-    from_addr = os.getenv("PARKING_MAIL_FROM", "noreply@localhost")
+    from_addr = os.getenv("PARKING_MAIL_FROM", "noreply@parkplatzportal.vr-365.de")
     msg = EmailMessage()
     msg["From"] = from_addr
     msg["To"] = to
