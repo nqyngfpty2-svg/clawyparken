@@ -40,7 +40,11 @@ starttls=false
 ssl=false
 ```
 
-Unterstützte Schlüssel (auch als Aliase): `host/hostname/server`, `port`, `user/username`, `pass/password`, `from/from_addr`, `starttls/tls`, `ssl`.
+Unterstützte Schlüssel (auch als Aliase): `host/hostname/server/smtp_host/mailhost`, `port`, `user/username`, `pass/password`, `from/from_addr`, `starttls/tls`, `ssl`.
+
+Plesk-Hinweis:
+- Manche Dienste haben `sendmail` nicht im PATH. Optional kann der absolute Pfad gesetzt werden:
+  - Env: `PARKING_SENDMAIL_PATH=/usr/sbin/sendmail`
 
 ## Nächste Schritte
 - systemd service + nginx + HTTPS (nur nach Toby-Freigabe)

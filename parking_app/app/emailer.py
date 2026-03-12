@@ -42,6 +42,7 @@ def _read_send_email_txt() -> dict[str, str]:
         "hostname": "host",
         "server": "host",
         "smtp_host": "host",
+        "mailhost": "host",
         "port": "port",
         "smtp_port": "port",
         "user": "user",
@@ -97,8 +98,25 @@ def _build_message(to: str, subject: str, body: str, from_addr: str) -> EmailMes
     return msg
 
 
+def _find_sendmail() -> str | None:
+    # Plesk/systemd-Umgebungen haben sendmail teils nicht im PATH.
+    env_path = (os.getenv("PARKING_SENDMAIL_PATH") or "").strip()
+    if env_path and Path(env_path).exists():
+        return env_path
+
+    which = shutil.which("sendmail")
+    if which:
+        return which
+
+    for candidate in ("/usr/sbin/sendmail", "/usr/lib/sendmail", "/sbin/sendmail"):
+        if Path(candidate).exists():
+            return candidate
+
+    return None
+
+
 def _send_via_sendmail(msg: EmailMessage) -> bool:
-    sendmail = shutil.which("sendmail")
+    sendmail = _find_sendmail()
     if not sendmail:
         return False
 
