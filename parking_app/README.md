@@ -1,6 +1,6 @@
 # Parkplatz-Share (MVP)
 
-Ziel: fixe Parkplätze (P01..P60) können von Ownern für Homeoffice-Tage angeboten werden; andere Mitarbeiter buchen tagesweise oder als Serie. Stornos durch Owner informieren den Buchenden per E-Mail.
+Ziel: fixe Parkplätze (P01..P60) können von Ownern für Homeoffice-Tage angeboten werden; andere Mitarbeiter buchen tagesweise oder als Serie. Buchende können optional eine private (nicht dienstliche) E-Mail hinterlegen; bei Owner-Storno wird dorthin ein Hinweis gesendet.
 
 ## Start (dev)
 

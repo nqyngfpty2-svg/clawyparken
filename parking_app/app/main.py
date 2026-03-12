@@ -14,7 +14,7 @@ from .db import connect, migrate
 from .owners import ensure_owner_codes, is_post_spot
 from .plan_labels import ensure_admin_token, load_labels, save_labels, render_annotated, PLAN_IMAGE
 from .admin_announce import ensure_admin_code, load_announcement, save_announcement
-# anonym mode: no outbound email
+from .emailer import send_email
 
 app = FastAPI(title="Parkplatz-Share")
 
@@ -43,6 +43,36 @@ def parse_day(s: str) -> date:
 def normalize_lot(lot: Optional[str]) -> str:
     lot = (lot or "bank").strip().lower()
     return lot if lot in {"bank", "post"} else "bank"
+
+
+def normalize_private_email(value: Optional[str]) -> str:
+    v = (value or "").strip().lower()
+    if not v:
+        return ""
+    # bewusst einfach gehalten: nur Basiskontrolle
+    if "@" not in v or " " in v:
+        return ""
+    return v[:254]
+
+
+def send_owner_cancel_email_if_opted(recipient: str, spot_name: str, day: str, reason: str) -> None:
+    recipient = normalize_private_email(recipient)
+    if not recipient:
+        return
+    subject = f"Clawyparken: Reservierung {day} storniert"
+    body = (
+        "Hallo,\n\n"
+        "deine Reservierung wurde vom Owner storniert.\n\n"
+        f"Parkplatz: {spot_name}\n"
+        f"Datum: {day}\n"
+        f"Grund: {reason or 'nicht angegeben'}\n\n"
+        "Du erhältst diese E-Mail, weil du beim Buchen optional eine private Adresse für Änderungen hinterlegt hast.\n"
+    )
+    try:
+        send_email(recipient, subject, body)
+    except Exception:
+        # Benachrichtigung darf den Storno-Flow nicht blockieren.
+        pass
 
 
 def berlin_day_list(start_day: str, days: int) -> list[str]:
@@ -516,9 +546,23 @@ def book(
     day: str = Form(...),
     spot: str = Form(...),
     lot: str = Form("bank"),
+    notify_email: str = Form(""),
+    notify_privacy_consent: Optional[str] = Form(None),
 ):
     token = secrets.token_urlsafe(24)
     lot = normalize_lot(lot)
+    private_email = normalize_private_email(notify_email)
+    consent_given = bool(notify_privacy_consent)
+
+    if notify_email.strip() and not private_email:
+        return PlainTextResponse("Bitte eine gültige private E-Mail-Adresse angeben.", status_code=400)
+
+    if private_email and not consent_given:
+        return PlainTextResponse(
+            "Bitte den Datenschutzhinweis bestätigen, um E-Mail-Benachrichtigungen zu aktivieren.",
+            status_code=400,
+        )
+
     with connect() as con:
         row = con.execute("SELECT id FROM spots WHERE name=? AND lot=?", (spot, lot)).fetchone()
         if not row:
@@ -535,11 +579,11 @@ def book(
 
         con.execute(
             "INSERT OR REPLACE INTO bookings(spot_id, day, booker_email, status, created_at, manage_token) VALUES(?,?,?,?,?,?)",
-            (spot_id, day, "", "active", now_iso(), token),
+            (spot_id, day, private_email, "active", now_iso(), token),
         )
         con.commit()
 
-    # No e-mail: show booking code immediately
+    # Buchungscode direkt anzeigen (E-Mail-Benachrichtigung ist optional)
     return RedirectResponse(url=f"/manage/{token}", status_code=303)
 
 
@@ -849,15 +893,22 @@ def owner_withdraw_series(
                 continue
             con.execute("DELETE FROM offers WHERE spot_id=? AND day=?", (spot["id"], day))
             b = con.execute(
-                "SELECT id, status FROM bookings WHERE spot_id=? AND day=?",
+                "SELECT id, status, booker_email FROM bookings WHERE spot_id=? AND day=?",
                 (spot["id"], day),
             ).fetchone()
             if b and b["status"] == "active":
                 if not owner_cancel_allowed(day):
                     continue
+                final_reason = (reason.strip() or "Owner hat die Serie zurückgezogen")[:200]
                 con.execute(
                     "UPDATE bookings SET status='cancelled_by_owner', cancelled_at=?, cancel_reason=? WHERE id=?",
-                    (now_iso(), (reason.strip() or "Owner hat die Serie zurückgezogen")[:200], b["id"]),
+                    (now_iso(), final_reason, b["id"]),
+                )
+                send_owner_cancel_email_if_opted(
+                    recipient=b["booker_email"],
+                    spot_name=spot["name"],
+                    day=day,
+                    reason=final_reason,
                 )
 
         con.commit()
@@ -880,14 +931,21 @@ def owner_withdraw_all(code: str = Form(...), reason: str = Form(""), p: int = F
 
         # Cancel only active bookings still within allowed owner-cancel window.
         active = con.execute(
-            "SELECT id, day FROM bookings WHERE spot_id=? AND day>? AND status='active'",
+            "SELECT id, day, booker_email FROM bookings WHERE spot_id=? AND day>? AND status='active'",
             (spot["id"], today),
         ).fetchall()
         for b in active:
             if owner_cancel_allowed(b["day"]):
+                final_reason = (reason.strip() or "Owner hat alle Freigaben zurückgezogen")[:200]
                 con.execute(
                     "UPDATE bookings SET status='cancelled_by_owner', cancelled_at=?, cancel_reason=? WHERE id=?",
-                    (now_iso(), (reason.strip() or "Owner hat alle Freigaben zurückgezogen")[:200], b["id"]),
+                    (now_iso(), final_reason, b["id"]),
+                )
+                send_owner_cancel_email_if_opted(
+                    recipient=b["booker_email"],
+                    spot_name=spot["name"],
+                    day=b["day"],
+                    reason=final_reason,
                 )
 
         # Delete future offers
@@ -921,13 +979,20 @@ def owner_withdraw(request: Request, code: str = Form(...), day: str = Form(...)
                     "Zu spät: Storno nur bis 12:00 Uhr am Vortag möglich.",
                     status_code=400,
                 )
+            final_reason = (reason.strip() or "Owner hat das Angebot zurückgezogen")[:200]
             con.execute(
                 "UPDATE bookings SET status='cancelled_by_owner', cancelled_at=?, cancel_reason=? WHERE id=?",
-                (now_iso(), (reason.strip() or "Owner hat das Angebot zurückgezogen")[:200], b["id"]),
+                (now_iso(), final_reason, b["id"]),
+            )
+            send_owner_cancel_email_if_opted(
+                recipient=b["booker_email"],
+                spot_name=spot["name"],
+                day=day,
+                reason=final_reason,
             )
         elif day <= today:
             return PlainTextResponse("Zu spät: Rückzug für heute nicht mehr möglich.", status_code=400)
         con.commit()
 
-    # No e-mail notifications in anonym mode.
+    # Optional hinterlegte private E-Mail wird bei Owner-Storno benachrichtigt.
     return RedirectResponse(url=f"/owner/portal?code={code}&p={p}", status_code=303)
