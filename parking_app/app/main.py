@@ -55,7 +55,13 @@ def normalize_private_email(value: Optional[str]) -> str:
     return v[:254]
 
 
-def send_booking_confirm_email_if_opted(recipient: str, spot_name: str, day: str, manage_token: str) -> None:
+def send_booking_confirm_email_if_opted(
+    recipient: str,
+    spot_name: str,
+    day: str,
+    manage_token: str,
+    manage_link: str,
+) -> None:
     recipient = normalize_private_email(recipient)
     if not recipient:
         return
@@ -65,7 +71,9 @@ def send_booking_confirm_email_if_opted(recipient: str, spot_name: str, day: str
         "deine Reservierung wurde erfolgreich angelegt.\n\n"
         f"Parkplatz: {spot_name}\n"
         f"Datum: {day}\n"
-        f"Buchungscode: {manage_token}\n\n"
+        f"Buchungscode: {manage_token}\n"
+        f"Storno-/Verwaltungslink: {manage_link}\n\n"
+        "Hinweis: Über den Link kannst du die Buchung selbst verwalten oder stornieren.\n\n"
         "Du erhältst diese E-Mail, weil du beim Buchen optional eine private Adresse für Bestätigung und Änderungen hinterlegt hast.\n"
     )
     try:
@@ -603,7 +611,9 @@ def book(
         )
         con.commit()
 
-    send_booking_confirm_email_if_opted(private_email, spot, day, token)
+    base = str(request.base_url).rstrip("/")
+    manage_link = f"{base}/manage/{token}"
+    send_booking_confirm_email_if_opted(private_email, spot, day, token, manage_link)
 
     # Buchungscode direkt anzeigen (E-Mail-Benachrichtigung ist optional)
     return RedirectResponse(url=f"/manage/{token}", status_code=303)
