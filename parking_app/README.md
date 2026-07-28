@@ -17,26 +17,12 @@ Dann im Browser: http://127.0.0.1:18880
 - Owner-Codes: `parking_app/secrets/owners.json` (chmod 600)
 
 ## E-Mail
-Versandpfad:
-1. SMTP aus `parking_app/secrets/send_email.txt` (wenn konfiguriert)
-2. Fallback lokal via `sendmail` (Plesk-kompatibel)
+Der Versand erfolgt ausschließlich über das lokale `sendmail` (Plesk-kompatibel).
+Externe SMTP-Zugänge, insbesondere STRATO, werden in diesem Projekt nicht verwendet.
 
 Absender:
 - Env-Var `PARKING_MAIL_FROM` (höchste Priorität)
-- sonst `from` aus `send_email.txt`
 - sonst Fallback `noreply@localhost`
-
-Beispiel `parking_app/secrets/send_email.txt`:
-
-```txt
-host=smtp.strato.de
-port=587
-user=noreply@parkplatzportal.vr-365.de
-password=DEIN_PASSWORT
-from=noreply@parkplatzportal.vr-365.de
-starttls=true
-ssl=false
-```
 
 ## Datenschutz / Aufbewahrung
 - Private Buchungs-E-Mails werden in `bookings.booker_email` gespeichert, solange sie für den Prozess nötig sind.
